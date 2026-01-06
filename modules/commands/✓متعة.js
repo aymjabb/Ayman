@@ -13,7 +13,7 @@ SERA.config = {
 
 SERA.run = async function ({ api, event, args }) {
 
-  const DEV_ID = "61576232405796"; // ايديك
+  const DEV_ID = "61577861540407"; // ايديك
 
   if (event.senderID !== DEV_ID) {
     return api.sendMessage("😼✨ هذا الأمر خاص بسيرا مع بابا أيمن فقط.", event.threadID);
