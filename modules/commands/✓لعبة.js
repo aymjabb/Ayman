@@ -34,12 +34,22 @@ function getUserGender(genderCode) {
   return '';
 }
 
+// زخرفة ASCII لطابع Sera Chan مع إيموجيات القطط
+function decorateSeraChan() {
+  const text = "Sera Chan Cat Vibes";
+  const symbols = ["═","╔","╗","╚","╝","─","•","✨","🐱"];
+  return text.split("").map(c => {
+    if (c === " ") return "   ";
+    return symbols[Math.floor(Math.random()*symbols.length)] + c;
+  }).join("");
+}
+
 module.exports.config = {
   name: "ايدي",
-  version: "1.0.3",
+  version: "1.0.5",
   hasPermssion: 0,
   credits: "ǺᎩᎧᏬᏰ",
-  description: "user facebookID",
+  description: "user facebookID + لوحة ASCII مرحة مع قطط",
   commandCategory: "🎮الالعاب🎮",
   cooldowns: 0,
 };
@@ -48,9 +58,7 @@ module.exports.run = async function ({ args, api, event, Currencies, client }) {
   try {
     const data = await api.getThreadInfo(event.threadID);
     const storage = [];
-    for (const value of data.userInfo) {
-      storage.push({ id: value.id, name: value.name });
-    }
+    for (const value of data.userInfo) storage.push({ id: value.id, name: value.name });
 
     const exp = [];
     for (const user of storage) {
@@ -61,17 +69,12 @@ module.exports.run = async function ({ args, api, event, Currencies, client }) {
         uid: user.id,
       });
     }
-
-    exp.sort((a, b) => {
-      if (a.exp > b.exp) return -1;
-      if (a.exp < b.exp) return 1;
-      return 0;
-    });
+    exp.sort((a, b) => b.exp - a.exp);
 
     const userId = event.type == "message_reply" ? event.messageReply.senderID : event.senderID;
     const infoUser = exp.find(info => parseInt(info.uid) === parseInt(userId));
 
-    const id = event.type == "message_reply" ? event.messageReply.senderID : event.senderID;
+    const id = userId;
     const user_data = await api.getUserInfo(id);
     const name = user_data[id].name;
     const gender = getUserGender(user_data[id].gender);
@@ -80,17 +83,31 @@ module.exports.run = async function ({ args, api, event, Currencies, client }) {
       try {
         const moneyFromFile = getUserMoney(id); 
         const moneyFromUserData = (await Currencies.getData(id)).money || 0; 
-
         const rank = getRank(infoUser.exp);
 
-        const msg = `اسمك👤: 『${name}』\nرسائلك✉️️: 『${infoUser.exp}』\nتصنيفك: 『${rank}』\nالبنك💰: 『${moneyFromFile}💲』\nالكاش💰: 『${moneyFromUserData}💵』`;
+        const seraChanText = decorateSeraChan();
+
+        // لوحة ASCII مرحة مع قطط
+        const msg = `
+╔════════════════════════════╗
+║ 🐱  هلاااا 『${name}』! 🐱 ║
+╠════════════════════════════╣
+║ 📨 رسائلك: ${infoUser.exp}                     ║
+║ 🏆 رتبتك: ${rank}                       ║
+║ 💰 البنك: ${moneyFromFile}💲                   ║
+║ 💵 الكاش: ${moneyFromUserData}💵                   ║
+╠════════════════════════════╣
+║ 🐾 طابع Sera Chan: ${seraChanText} 🐾 ║
+╠════════════════════════════╣
+║ 😻 البوت يقول لك: "واو! أنت شاطر جدًا! استمر بالمرح 🐱" ║
+║ 🐱 ولا تنسى تطور نفسك وتجمع نقاط أكثر! 😸 ║
+╚════════════════════════════╝
+`;
 
         api.sendMessage({
           body: msg,
           attachment: fs.createReadStream(__dirname + "/cache/1.png"),
-        }, event.threadID, () => {
-          fs.unlinkSync(__dirname + "/cache/1.png");
-        });
+        }, event.threadID, () => fs.unlinkSync(__dirname + "/cache/1.png"));
 
       } catch (error) {
         console.error(error);
@@ -105,17 +122,8 @@ module.exports.run = async function ({ args, api, event, Currencies, client }) {
 
     pictureRequest.pipe(fs.createWriteStream(__dirname + "/cache/1.png")).on("close", pictureCallback);
 
-    api.sendMessage(
-      ``,
-      event.threadID
-    );
   } catch (error) {
     console.error(error);
-
-    api.sendMessage(
-      `حدث خطأ: ${error.message}`,
-      event.threadID,
-      event.messageID
-    );
+    api.sendMessage(`❌ حدث خطأ: ${error.message}`, event.threadID, event.messageID);
   }
 };
