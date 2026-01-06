@@ -3,37 +3,37 @@ module.exports.config = {
   version: "3.1.1",
   hasPermssion: 0,
   credits: "عمر",
-  description: "تشنق حد بمنشن",
+  description: "تشنق حد بمنشن مع طابع سيرا الجميل",
   commandCategory: "العاب",
   usages: "[للشخص لتريده@حط]",
   cooldowns: 5,
   dependencies: {
-      "axios": "",
-      "fs-extra": "",
-      "path": "",
-      "jimp": ""
+    "axios": "",
+    "fs-extra": "",
+    "path": "",
+    "jimp": ""
   }
 };
 
-module.exports.onLoad = async() => {
+module.exports.onLoad = async () => {
   const { resolve } = global.nodemodule["path"];
   const { existsSync, mkdirSync } = global.nodemodule["fs-extra"];
   const { downloadFile } = global.utils;
-  const dirMaterial = __dirname + `/cache/canvas/`;
+  const dirMaterial = __dirname + "/cache/canvas/";
   const path = resolve(__dirname, 'cache/canvas', 'smto.png');
-  if (!existsSync(dirMaterial + "canvas")) mkdirSync(dirMaterial, { recursive: true });
+  if (!existsSync(dirMaterial)) mkdirSync(dirMaterial, { recursive: true });
   if (!existsSync(path)) await downloadFile("https://i.postimg.cc/brq6rDDB/received-1417994055426496.jpg", path);
 }
 
 async function makeImage({ one, two }) {
   const fs = global.nodemodule["fs-extra"];
   const path = global.nodemodule["path"];
-  const axios = global.nodemodule["axios"]; 
+  const axios = global.nodemodule["axios"];
   const jimp = global.nodemodule["jimp"];
   const __root = path.resolve(__dirname, "cache", "canvas");
 
   let batgiam_img = await jimp.read(__root + "/smto.png");
-  let pathImg = __root + `/smto${one}_${two}.png`;
+  let pathImg = __root + `/smto_${one}_${two}.png`;
   let avatarOne = __root + `/avt_${one}.png`;
   let avatarTwo = __root + `/avt_${two}.png`;
 
@@ -45,7 +45,7 @@ async function makeImage({ one, two }) {
 
   let circleOne = await jimp.read(await circle(avatarOne));
   let circleTwo = await jimp.read(await circle(avatarTwo));
-  batgiam_img.composite(circleOne.resize(200, 200), 255, 25005).composite(circleTwo.resize(118, 118), 350, 80);
+  batgiam_img.composite(circleOne.resize(200, 200), 255, 250).composite(circleTwo.resize(118, 118), 350, 80);
 
   let raw = await batgiam_img.getBufferAsync("image/png");
 
@@ -55,6 +55,7 @@ async function makeImage({ one, two }) {
 
   return pathImg;
 }
+
 async function circle(image) {
   const jimp = require("jimp");
   image = await jimp.read(image);
@@ -62,13 +63,20 @@ async function circle(image) {
   return await image.getBufferAsync("image/png");
 }
 
-module.exports.run = async function ({ event, api, args }) {    
+module.exports.run = async function ({ event, api, args }) {
   const fs = global.nodemodule["fs-extra"];
   const { threadID, messageID, senderID } = event;
   const mention = Object.keys(event.mentions);
-  if (!mention[0]) return api.sendMessage("تاغ للبني ادم", threadID, messageID);
-  else {
-      const one = senderID, two = mention[0];
-      return makeImage({ one, two }).then(path => api.sendMessage({ body: "", attachment: fs.createReadStream(path) }, threadID, () => fs.unlinkSync(path), messageID));
-  }
-    }
+  
+  if (!mention[0]) return api.sendMessage("تاغ للبني ادم 😅", threadID, messageID);
+
+  const one = senderID, two = mention[0];
+  
+  // تنفيذ الصورة المدمجة مع التفاعل مع المستخدم
+  return makeImage({ one, two }).then(path => 
+    api.sendMessage({ 
+      body: "🎮 تم شنق الشخص بنجاح مع طابع سيرا الجميل! 💀\nمبروك! 🌟", 
+      attachment: fs.createReadStream(path) 
+    }, threadID, () => fs.unlinkSync(path), messageID);
+  );
+};
