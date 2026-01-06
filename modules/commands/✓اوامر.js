@@ -1,69 +1,35 @@
 module.exports.config = {
   name: "اوامر",
-  version: "3.0.0",
+  version: "3.1.0",
   hasPermssion: 0,
   credits: "انس • مزخرف بواسطة Sera Chan",
-  description: "قائمة أوامر البوت مزخرفة Ultra-Fancy 💖✨",
+  description: "قائمة أوامر البوت مرتبة حسب الفئة مع تفعيل الأوامر بالرد على الرقم",
   commandCategory: "النظام",
-  usages: ".اوامر [اسم الأمر]",
+  usages: ".اوامر",
   cooldowns: 5,
   envConfig: {
     autoUnsend: true,
-    delayUnsend: 300 // 5 دقائق
+    delayUnsend: 10 // 10 ثوانٍ
   }
 };
 
 module.exports.languages = {
   "en": {
-    "moduleInfo": "「 %1 」\n💖 %2 💖\n\n🍃 Usage: %3\n🌸 Category: %4\n⏱️ Wait: %5 seconds\n🔑 Permission: %6\n\n✨ Developed by %7 ✨",
-    "helpList": "[ There are %1 commands in the bot! Use: \"%2help commandName\" to see details! 😻 ]",
-    "user": "User 😸",
-    "adminGroup": "Group Admin 🌟",
-    "adminBot": "Bot Admin 🔥"
+    "moduleInfo": "┌─ Command: %1 ─┐\nDescription: %2\nUsage: %3\nCategory: %4\nCooldown: %5 sec\nPermission: %6\nCredits: %7\n└─────────────────┘",
+    "user": "User",
+    "adminGroup": "Group Admin",
+    "adminBot": "Bot Admin"
   }
 };
 
-module.exports.handleEvent = function ({ api, event, getText }) {
+module.exports.handleEvent = async function({ api, event, getText }) {
   const { commands } = global.client;
-  const { threadID, messageID, body } = event;
-
-  if (!body || typeof body === "cmd" || !body.toLowerCase().startsWith("help")) return;
-
-  const splitBody = body.slice(body.indexOf("help")).trim().split(/\s+/);
-  if (splitBody.length == 1 || !commands.has(splitBody[1].toLowerCase())) return;
+  const { threadID, messageID, body, messageReply } = event;
+  if (!body) return;
 
   const threadSetting = global.data.threadData.get(parseInt(threadID)) || {};
-  const command = commands.get(splitBody[1].toLowerCase());
   const prefix = threadSetting.PREFIX || global.config.PREFIX;
-
-  const deco = ["✨","💖","🌸","🌟","💫","😻","🔥","🎇","🌈","🌀"];
-  const randomDeco = () => deco[Math.floor(Math.random() * deco.length)];
-
-  return api.sendMessage(
-    getText(
-      "moduleInfo",
-      `💫${command.config.name}💫 ${randomDeco()}`,
-      `🌸${command.config.description}🌸`,
-      `${prefix}${command.config.name} ${(command.config.usages) ? command.config.usages : ""}`,
-      `📂 ${command.config.commandCategory}`,
-      `${command.config.cooldowns}`,
-      ((command.config.hasPermssion == 0) ? getText("user") : (command.config.hasPermssion == 1) ? getText("adminGroup") : getText("adminBot")),
-      command.config.credits
-    ),
-    threadID,
-    messageID
-  );
-};
-
-module.exports.run = async function({ api, event, args, getText }) {
-  const { commands } = global.client;
-  const { threadID, messageID } = event;
-  const threadSetting = global.data.threadData.get(parseInt(threadID)) || {};
   const { autoUnsend, delayUnsend } = global.configModule[this.config.name];
-  const prefix = threadSetting.PREFIX || global.config.PREFIX;
-
-  const deco = ["✨","💖","🌸","🌟","💫","😻","🔥","🎇","🌈","🌀"];
-  const randomDeco = () => deco[Math.floor(Math.random() * deco.length)];
 
   // ترتيب الأوامر حسب الفئة
   const categories = {};
@@ -72,42 +38,72 @@ module.exports.run = async function({ api, event, args, getText }) {
     categories[cmd.config.commandCategory].push(cmd);
   }
 
-  if (!args[0]) {
-    // عرض قائمة كل الأوامر مزخرفة Ultra-Fancy
-    let msg = `💖✨🌟🎇🌀 Sera Chan's Ultra-Fancy Command List 🌀🎇🌟✨💖\n\n`;
+  // إذا رد المستخدم على رسالة الأوامر
+  if (messageReply && messageReply.body && messageReply.body.includes("قائمة أوامر البوت")) {
+    const categoryName = body.trim().toLowerCase();
+    if (!categories[categoryName]) return; // الفئة غير موجودة
 
-    for (let cat in categories) {
-      msg += `📂 ── ${cat.toUpperCase()} ── 📂\n`;
-      categories[cat].forEach((cmd, i) => {
-        msg += `${randomDeco()} 💫 ${i+1}. ${cmd.config.name} ${randomDeco()}\n  🌸 وصف: ${cmd.config.description}\n\n`;
-      });
-      msg += `--------------------------------\n\n`;
+    let msg = `== أوامر فئة: ${categoryName.toUpperCase()} ==\n`;
+    categories[categoryName].sort((a, b) => a.config.name.localeCompare(b.config.name)).forEach((cmd, index) => {
+      msg += `${index + 1}. ${cmd.config.name} - ${cmd.config.description}\n`;
+    });
+
+    // إرسال رسالة قائمة الأوامر
+    const info = await api.sendMessage(msg, threadID);
+
+    // حذف الرسالة بعد 10 ثواني
+    if (autoUnsend) {
+      setTimeout(() => api.unsendMessage(info.messageID).catch(() => {}), delayUnsend * 1000);
     }
 
-    msg += `💖✨🌟 Sera Chan ترحب بك وتجعل تجربتك ممتعة جدًا! 🌟✨💖`;
+    return;
+  }
 
-    return api.sendMessage(msg, threadID, async (error, info) => {
-      if (autoUnsend) {
-        await new Promise(resolve => setTimeout(resolve, delayUnsend * 1000));
-        return api.unsendMessage(info.messageID);
-      }
-    });
-  } else {
-    // عرض تفاصيل أمر محدد مزخرف
-    const command = commands.get(args[0].toLowerCase());
-    if (!command) return api.sendMessage(`❌ الأمر "${args[0]}" غير موجود! ${randomDeco()}`, threadID, messageID);
+  // إذا رد المستخدم على رقم أمر لتفعيله
+  if (messageReply && messageReply.body && messageReply.body.startsWith("== أوامر فئة:")) {
+    const lines = messageReply.body.split("\n").slice(1); // تجاهل العنوان
+    const num = parseInt(body.trim());
+    if (isNaN(num) || num < 1 || num > lines.length) return;
 
-    const msg = getText(
-      "moduleInfo",
-      `💫${command.config.name}💫 ${randomDeco()}`,
-      `🌸${command.config.description}🌸`,
-      `${prefix}${command.config.name} ${(command.config.usages) ? command.config.usages : ""}`,
-      `📂 ${command.config.commandCategory}`,
-      `${command.config.cooldowns}`,
-      ((command.config.hasPermssion == 0) ? getText("user") : (command.config.hasPermssion == 1) ? getText("adminGroup") : getText("adminBot")),
-      command.config.credits
-    );
+    const line = lines[num - 1];
+    const cmdName = line.split(" - ")[0].trim();
+    const command = commands.get(cmdName.toLowerCase());
+    if (!command) return;
 
-    return api.sendMessage(msg, threadID, messageID);
+    // تشغيل الأمر
+    if (command.run) {
+      command.run({ api, event, args: [], getText });
+    }
+    return;
+  }
+};
+
+module.exports.run = async function({ api, event }) {
+  const { threadID, messageID } = event;
+  const { autoUnsend, delayUnsend } = global.configModule[this.config.name];
+
+  let msg = "╔════════════════════════╗\n";
+  msg += "║  قائمة أوامر البوت  ║\n";
+  msg += "╠════════════════════════╣\n\n";
+  msg += "اكتب اسم الفئة بالرد على هذه الرسالة لعرض أوامرها.\n\n";
+
+  // عرض الفئات
+  const categories = {};
+  for (let [name, cmd] of global.client.commands) {
+    if (!categories[cmd.config.commandCategory]) categories[cmd.config.commandCategory] = [];
+    categories[cmd.config.commandCategory].push(cmd);
+  }
+
+  Object.keys(categories).sort().forEach((cat, i) => {
+    msg += ` ${i + 1}. ${cat}\n`;
+  });
+
+  msg += "\n╚════════════════════════╝";
+
+  const info = await api.sendMessage(msg, threadID, messageID);
+
+  // حذف بعد 10 ثوانٍ
+  if (autoUnsend) {
+    setTimeout(() => api.unsendMessage(info.messageID).catch(() => {}), delayUnsend * 1000);
   }
 };
