@@ -46,14 +46,8 @@ module.exports.run = async ({ api, event }) => {
 🐍 الخيانة ما تنفع هنا
 
 ✦ سيرا تشان تراقب ✦`;
-      
-      // إرسال صورة ساخرة من الإنترنت
-      const gifUrl = "https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif"; // GIF سخري
-      const path = __dirname + "/cache/sarcasm.gif";
-      const response = await axios({ url: gifUrl, responseType: "arraybuffer" });
-      fs.writeFileSync(path, Buffer.from(response.data, "utf-8"));
-      
-      return api.sendMessage({ body: msg, attachment: fs.createReadStream(path) }, threadID, () => fs.unlinkSync(path));
+
+      return api.sendMessage(msg, threadID);
     }
     return api.sendMessage("😂 لا يمكن طرد المطور! سيرا تشان فوق كل شيء 🐾", threadID, messageID);
   }
