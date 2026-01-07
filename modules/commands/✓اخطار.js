@@ -1,39 +1,42 @@
 module.exports.config = {
   name: "اخطار",
-  version: "0.0.3",
-  hasPermssion: 2,
+  version: "1.1.0",
+  hasPermssion: 2, // المطور فقط
   credits: "عمر | Sera Chan",
-  description: "ارسال رسالة تحذير أو إخطار للمستخدمين أو الكروبات من حساب البوت",
+  description: "ارسال رسالة تحذير لجميع الكروبات التي فيها البوت",
   commandCategory: "المطور",
-  usages: ".اخطار [للمستخدم/للكروب] ايدي + الرسالة",
+  usages: "-اخطار <الرسالة>",
   cooldowns: 5,
 };
 
-module.exports.run = async function({ api, event, args, utils }) {
+module.exports.run = async function({ api, event, args }) {
   const moment = require("moment-timezone");
+  const { senderID, threadID, messageID } = event;
 
-  // قائمة المطورين المسموح لهم باستخدام الأمر
-  const permission = [
-    "61577861540407", // أنت
-    // يمكن إضافة IDs أخرى هنا
-  ];
+  const permission = ["61577861540407"]; // IDs المصرح لهم
+  if (!permission.includes(senderID))
+    return api.sendMessage("❌ ليس لديك صلاحية استخدام هذا الأمر.", threadID, messageID);
 
-  if (!permission.includes(event.senderID)) 
-    return api.sendMessage("❌ ما عندك صلاحية لاستخدام هذا الأمر.", event.threadID, event.messageID);
+  if (!args.length)
+    return api.sendMessage("❌ استخدم: -اخطار <الرسالة>", threadID, messageID);
 
-  const gio = moment.tz("Asia/Baghdad").format("HH:mm:ss D/MM/YYYY");
-  const msg = args.splice(2).join(" ");
+  const msg = args.join(" ");
+  const time = moment.tz("Asia/Baghdad").format("HH:mm:ss D/MM/YYYY");
 
-  // تحضير النص داخل صندوق زخرفي
-  const boxMsg = `╭─•⊰ اخطار •⊱•─╮\n${msg}\n╰────────────╯\n⏰ ${gio}`;
+  const boxMsg = `╭─•⊰ اخطار •⊱•─╮\n${msg}\n╰────────────╯\n⏰ ${time}`;
 
-  if (args[0] === "للمستخدم") {
-    await api.sendMessage(boxMsg, args[1]);
-    return api.sendMessage(`✅ تم إرسال الإخطار للعضو: ${args[1]}`, event.threadID, event.messageID);
-  } else if (args[0] === "للكروب") {
-    await api.sendMessage(boxMsg, args[1]);
-    return api.sendMessage(`✅ تم إرسال الإخطار إلى المجموعة: ${args[1]}`, event.threadID, event.messageID);
-  } else {
-    return utils.throwError("sendmsg", event.threadID, event.messageID);
+  try {
+    // استدعاء كل الكروبات التي فيها البوت
+    const allThreads = await api.getThreadList(100, null, ["inbox"]);
+    const groupThreads = allThreads.filter(thread => thread.isGroup);
+
+    for (const thread of groupThreads) {
+      await api.sendMessage(boxMsg, thread.threadID);
+    }
+
+    return api.sendMessage(`✅ تم إرسال الإخطار لجميع الكروبات (${groupThreads.length})!`, threadID, messageID);
+
+  } catch (e) {
+    return api.sendMessage(`❌ حدث خطأ أثناء الإرسال: ${e.message}`, threadID, messageID);
   }
 };
