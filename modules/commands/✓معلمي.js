@@ -13,7 +13,7 @@ function decorateTextAnime(text) {
 }
 
 // تأثير توهج على الصورة
-async function glowImage(image, size = 15) {
+async function glowImage(image, size = 10) {
     const clone = image.clone();
     clone.blur(size);
     clone.opacity(0.4);
@@ -24,10 +24,10 @@ async function glowImage(image, size = 15) {
 
 module.exports.config = {
     name: "معلمي",
-    version: "3.0.0",
+    version: "3.1.0",
     hasPermssion: 0,
-    credits: "Sera",
-    description: "معلومات المعلم بطابع أنمي ASCII + شكر وتقدير متوهج",
+    credits: "Sera Chan",
+    description: "معلومات المعلم بطابع أنمي ASCII + شكر متوهج",
     commandCategory: "معلومات",
     usages: ".معلمي",
     cooldowns: 5
@@ -37,11 +37,14 @@ module.exports.run = async function({ api, event }) {
     const { threadID } = event;
 
     const bgURL = "https://i.ibb.co/99N6spNX/temp-1767739835381.jpg"; // الخلفية
-    const avatarURL = "https://i.ibb.co/6w7G8Lq/avatar.jpg"; // صورة المعلم المباشرة
+    const avatarURL = "https://i.ibb.co/6w7G8Lq/avatar.jpg"; // صورة المعلم
 
-    const bgPath = path.join(__dirname, "cache", "bg.jpg");
-    const avatarPath = path.join(__dirname, "cache", "avatar.jpg");
-    const finalPath = path.join(__dirname, "cache", "teacher_final.png");
+    const cacheDir = path.join(__dirname, "cache");
+    if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
+
+    const bgPath = path.join(cacheDir, "bg.jpg");
+    const avatarPath = path.join(cacheDir, "avatar.jpg");
+    const finalPath = path.join(cacheDir, "teacher_final.png");
 
     try {
         // تحميل الصور
@@ -53,42 +56,42 @@ module.exports.run = async function({ api, event }) {
 
         // تكبير الصورة الشخصية ووضع توهج عليها
         avatar.resize(200, 200);
-        avatar = await glowImage(avatar, 20);
+        avatar = await glowImage(avatar, 15);
 
-        const avatarX = bg.bitmap.width / 2 - 100;
+        const avatarX = (bg.bitmap.width / 2) - 100;
         const avatarY = 80;
         bg.composite(avatar, avatarX, avatarY);
 
-        // تحميل خط واضح وكبير
-        const font = await jimp.loadFont(jimp.FONT_SANS_64_WHITE);
+        // تحميل خط آمن
+        const font = await jimp.loadFont(jimp.FONT_SANS_32_WHITE);
 
-        // المعلومات الأساسية مع زخرفة ASCII
+        // المعلومات الأساسية مزخرفة
         const infoLines = [
-            decorateTextAnime("🌀 الأب الروحي للبوتات والتطوير"),
-            decorateTextAnime("🇾🇪 من اليمن"),
-            decorateTextAnime("🎂 عمره 20 سنة"),
-            decorateTextAnime("💻 مطور ومبرمج")
-        ];
+            "🌀 الأب الروحي للبوتات والتطوير",
+            "🇾🇪 من اليمن",
+            "🎂 عمره 20 سنة",
+            "💻 مطور ومبرمج"
+        ].map(decorateTextAnime);
 
-        // شكر وتقدير أسفل الصورة
+        // شكر وتقدير
         const thanksLines = [
-            decorateTextAnime("🙏 شكر وتقدير للمعلم الكريم 🌸"),
-            decorateTextAnime("✨ على كل الدعم والتطوير والمجهود الكبير ✨"),
-            decorateTextAnime("🌟 دائما مثال وقدوة لنا في البرمجة والبوتات 🌟")
-        ];
+            "🙏 شكر وتقدير للمعلم الكريم 🌸",
+            "✨ على كل الدعم والتطوير والمجهود الكبير ✨",
+            "🌟 دائما مثال وقدوة لنا في البرمجة والبوتات 🌟"
+        ].map(decorateTextAnime);
 
         // كتابة المعلومات
         let offsetY = avatarY + 220;
         for (let line of infoLines) {
             bg.print(font, 50, offsetY, { text: line, alignmentX: jimp.HORIZONTAL_ALIGN_CENTER }, bg.bitmap.width - 100);
-            offsetY += 80;
+            offsetY += 60;
         }
 
         // كتابة الشكر أسفل المعلومات
         let thanksY = offsetY + 30;
         for (let line of thanksLines) {
             bg.print(font, 50, thanksY, { text: line, alignmentX: jimp.HORIZONTAL_ALIGN_CENTER }, bg.bitmap.width - 100);
-            thanksY += 80;
+            thanksY += 60;
         }
 
         // حفظ الصورة النهائية
@@ -99,6 +102,7 @@ module.exports.run = async function({ api, event }) {
             body: "✨ معلومات المعلم + شكر وتقدير بطابع أنمي ASCII متوهج 🌸",
             attachment: fs.createReadStream(finalPath)
         }, threadID, () => {
+            // تنظيف الملفات بعد الإرسال
             fs.unlinkSync(bgPath);
             fs.unlinkSync(avatarPath);
             fs.unlinkSync(finalPath);
