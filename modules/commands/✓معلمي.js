@@ -3,102 +3,109 @@ const fs = require("fs-extra");
 const path = require("path");
 const jimp = require("jimp");
 
-// دالة زخرفة النص بأسلوب ASCII أنمي
-function decorateText(text) {
-  const symbols = ["★","☆","✧","✦","✩","✪","⚡","☄","☯","❂","❉"];
-  return text.split("").map(c => {
-    if (c === " ") return "  ";
-    return symbols[Math.floor(Math.random()*symbols.length)] + c + symbols[Math.floor(Math.random()*symbols.length)];
-  }).join("");
+// دالة زخرفة النصوص بأسلوب أنمي + نجوم متحركة
+function decorateTextAnime(text) {
+    const symbols = ["★","☆","✧","✦","✩","✪","⚡","☄","☯","❂","❉","✨"];
+    return text.split("").map(c => {
+        if(c === " ") return "  ";
+        return symbols[Math.floor(Math.random()*symbols.length)] + c + symbols[Math.floor(Math.random()*symbols.length)];
+    }).join("");
+}
+
+// تأثير توهج على الصورة
+async function glowImage(image, size = 15) {
+    const clone = image.clone();
+    clone.blur(size);
+    clone.opacity(0.4);
+    const newImg = image.clone();
+    newImg.composite(clone, 0, 0);
+    return newImg;
 }
 
 module.exports.config = {
-  name: "معلمي",
-  version: "2.1.0",
-  hasPermssion: 0,
-  credits: "Sera",
-  description: "معلومات المعلم بطابع أنمي ASCII مزخرف + شكر وتقدير",
-  commandCategory: "معلومات",
-  usages: ".معلمي",
-  cooldowns: 5
+    name: "معلمي",
+    version: "3.0.0",
+    hasPermssion: 0,
+    credits: "Sera",
+    description: "معلومات المعلم بطابع أنمي ASCII + شكر وتقدير متوهج",
+    commandCategory: "معلومات",
+    usages: ".معلمي",
+    cooldowns: 5
 };
 
 module.exports.run = async function({ api, event }) {
-  const { threadID } = event;
+    const { threadID } = event;
 
-  const bgURL = "https://i.ibb.co/99N6spNX/temp-1767739835381.jpg";
-  const avatarURL = "https://graph.facebook.com/61584059280197/picture?width=512&height=512";
+    const bgURL = "https://i.ibb.co/99N6spNX/temp-1767739835381.jpg"; // الخلفية
+    const avatarURL = "https://i.ibb.co/6w7G8Lq/avatar.jpg"; // صورة المعلم المباشرة
 
-  const bgPath = path.join(__dirname, "cache", "bg.jpg");
-  const avatarPath = path.join(__dirname, "cache", "avatar.jpg");
-  const finalPath = path.join(__dirname, "cache", "teacher_final.png");
+    const bgPath = path.join(__dirname, "cache", "bg.jpg");
+    const avatarPath = path.join(__dirname, "cache", "avatar.jpg");
+    const finalPath = path.join(__dirname, "cache", "teacher_final.png");
 
-  try {
-    // تحميل الخلفية
-    const bgRes = await axios.get(bgURL, { responseType: "arraybuffer" });
-    fs.writeFileSync(bgPath, Buffer.from(bgRes.data));
+    try {
+        // تحميل الصور
+        fs.writeFileSync(bgPath, Buffer.from((await axios.get(bgURL, { responseType: "arraybuffer" })).data));
+        fs.writeFileSync(avatarPath, Buffer.from((await axios.get(avatarURL, { responseType: "arraybuffer" })).data));
 
-    // تحميل الصورة الشخصية
-    const avatarRes = await axios.get(avatarURL, { responseType: "arraybuffer" });
-    fs.writeFileSync(avatarPath, Buffer.from(avatarRes.data));
+        let bg = await jimp.read(bgPath);
+        let avatar = await jimp.read(avatarPath);
 
-    // قراءة الصور
-    const bg = await jimp.read(bgPath);
-    const avatar = await jimp.read(avatarPath);
+        // تكبير الصورة الشخصية ووضع توهج عليها
+        avatar.resize(200, 200);
+        avatar = await glowImage(avatar, 20);
 
-    // تكبير وتصغير الصورة الشخصية ووضعها على الصدر
-    avatar.resize(200, 200);
-    const x = bg.bitmap.width / 2 - 100;
-    const y = bg.bitmap.height / 2;
-    bg.composite(avatar, x, y);
+        const avatarX = bg.bitmap.width / 2 - 100;
+        const avatarY = 80;
+        bg.composite(avatar, avatarX, avatarY);
 
-    // تحميل خط
-    const font = await jimp.loadFont(jimp.FONT_SANS_32_WHITE);
+        // تحميل خط واضح وكبير
+        const font = await jimp.loadFont(jimp.FONT_SANS_64_WHITE);
 
-    // المعلومات مع زخارف ASCII
-    const infoLines = [
-      decorateText("🌀 الأب الروحي للبوتات والتطوير"),
-      decorateText("🇾🇪 من اليمن"),
-      decorateText("🎂 عمره 20 سنة"),
-      decorateText("💻 مطور ومبرمج")
-    ];
+        // المعلومات الأساسية مع زخرفة ASCII
+        const infoLines = [
+            decorateTextAnime("🌀 الأب الروحي للبوتات والتطوير"),
+            decorateTextAnime("🇾🇪 من اليمن"),
+            decorateTextAnime("🎂 عمره 20 سنة"),
+            decorateTextAnime("💻 مطور ومبرمج")
+        ];
 
-    // شكر وتقدير أسفل الصورة
-    const thanksLines = [
-      decorateText("🙏 شكر وتقدير للمعلم الكريم 🌸"),
-      decorateText("✨ على كل الدعم والتطوير والمجهود الكبير ✨"),
-      decorateText("🌟 دائما مثال وقدوة لنا في البرمجة والبوتات 🌟")
-    ];
+        // شكر وتقدير أسفل الصورة
+        const thanksLines = [
+            decorateTextAnime("🙏 شكر وتقدير للمعلم الكريم 🌸"),
+            decorateTextAnime("✨ على كل الدعم والتطوير والمجهود الكبير ✨"),
+            decorateTextAnime("🌟 دائما مثال وقدوة لنا في البرمجة والبوتات 🌟")
+        ];
 
-    // كتابة المعلومات
-    let offsetY = y + 220;
-    for (let line of infoLines) {
-      bg.print(font, 50, offsetY, line);
-      offsetY += 50;
+        // كتابة المعلومات
+        let offsetY = avatarY + 220;
+        for (let line of infoLines) {
+            bg.print(font, 50, offsetY, { text: line, alignmentX: jimp.HORIZONTAL_ALIGN_CENTER }, bg.bitmap.width - 100);
+            offsetY += 80;
+        }
+
+        // كتابة الشكر أسفل المعلومات
+        let thanksY = offsetY + 30;
+        for (let line of thanksLines) {
+            bg.print(font, 50, thanksY, { text: line, alignmentX: jimp.HORIZONTAL_ALIGN_CENTER }, bg.bitmap.width - 100);
+            thanksY += 80;
+        }
+
+        // حفظ الصورة النهائية
+        await bg.writeAsync(finalPath);
+
+        // إرسال الصورة
+        await api.sendMessage({
+            body: "✨ معلومات المعلم + شكر وتقدير بطابع أنمي ASCII متوهج 🌸",
+            attachment: fs.createReadStream(finalPath)
+        }, threadID, () => {
+            fs.unlinkSync(bgPath);
+            fs.unlinkSync(avatarPath);
+            fs.unlinkSync(finalPath);
+        });
+
+    } catch (e) {
+        console.error(e);
+        api.sendMessage("❌ حدث خطأ أثناء تجهيز الصورة.", threadID);
     }
-
-    // كتابة الشكر أسفل المعلومات
-    let thanksY = offsetY + 30;
-    for (let line of thanksLines) {
-      bg.print(font, 50, thanksY, line);
-      thanksY += 50;
-    }
-
-    // حفظ الصورة النهائية
-    await bg.writeAsync(finalPath);
-
-    // إرسال الرسالة
-    await api.sendMessage({
-      body: "✨ معلومات المعلم + شكر وتقدير بطابع سيرا ASCII 🌸",
-      attachment: fs.createReadStream(finalPath)
-    }, threadID, () => {
-      fs.unlinkSync(bgPath);
-      fs.unlinkSync(avatarPath);
-      fs.unlinkSync(finalPath);
-    });
-
-  } catch (e) {
-    console.error(e);
-    api.sendMessage("❌ حدث خطأ أثناء تجهيز الصورة.", threadID);
-  }
 };
