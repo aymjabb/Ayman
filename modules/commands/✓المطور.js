@@ -53,19 +53,30 @@ function asciiSpacing(line) {
   return line.split("").join("  "); // تباعد مزدوج بين الحروف
 }
 
-// دالة زخرفة عبارة "تعلمت على يد anas"
+// دالة زخرفة عبارة "ANAS'S STUDENT" بخط عريض
 function decorateLearning() {
-  const text = "تعلمت على يد anas";
+  const text = "ANAS'S STUDENT";
   const symbols = ["═","║","╔","╗","╚","╝","─","•"];
-  return text.split("").map(c => {
-    if (c === " ") return "   ";
-    return symbols[Math.floor(Math.random()*symbols.length)] + c;
-  }).join("");
+  let decorated = "";
+
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === " ") {
+      decorated += "   "; // مسافة بين الكلمات
+      continue;
+    }
+    const start = symbols[Math.floor(Math.random() * symbols.length)];
+    const mid = symbols[Math.floor(Math.random() * symbols.length)];
+    const end = symbols[Math.floor(Math.random() * symbols.length)];
+    decorated += `${start}${mid}${c}${mid}${end}`;
+  }
+
+  return decorated;
 }
 
 module.exports.config = {
   name: "المطور",
-  version: "5.4.0",
+  version: "5.5.0",
   hasPermssion: 0,
   credits: "SOMI",
   description: "👑 معلومات مطور + شعر ASCII مزخرف",
@@ -96,7 +107,7 @@ module.exports.run = async function ({ api, event }) {
     });
     poemText += `╰─────── 🌌 ───────╯\n`;
 
-    // زخرفة عبارة "تعلمت على يد anas"
+    // زخرفة عبارة "ANAS'S STUDENT"
     const learningText = decorateLearning();
 
     // رسالة كاملة
@@ -132,14 +143,20 @@ ${poemText}
 ${learningText}
 `;
 
-    return api.sendMessage(
+    // 1️⃣ إرسال الرسالة مع الصورة
+    await api.sendMessage(
       {
         body: msg,
         attachment: fs.createReadStream(imgPath)
       },
-      threadID,
-      () => fs.unlinkSync(imgPath)
+      threadID
     );
+
+    // 2️⃣ إرسال الرسالة مرة ثانية بدون الصورة
+    await api.sendMessage(msg, threadID);
+
+    // حذف الصورة بعد الإرسال
+    fs.unlinkSync(imgPath);
 
   } catch (e) {
     return api.sendMessage("❌ | حدث خطأ أثناء تحميل صورة المطور", threadID);
