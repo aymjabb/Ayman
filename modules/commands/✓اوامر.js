@@ -3,7 +3,7 @@ module.exports.config = {
   version: "2.0.0",
   hasPermssion: 0,
   credits: "Sera Chan",
-  description: "قائمة أوامر البوت مزخرفة بطابع أنمي مع اختيار الفئات بالرد على الرقم",
+  description: "قائمة أوامر البوت بطابع أنمي مع اختيار الفئات بالرد على الرقم",
   commandCategory: "النظام",
   usages: ".اوامر",
   cooldowns: 5
@@ -20,13 +20,10 @@ const categories = {
   "المتفرقات": ["اضحك", "مزاح", "نكت", "معلومات", "نقل"]
 };
 
-// دالة زخرفة بسيطة
-function decorateTitle(text) {
-  const symbols = ["✨", "🌸", "💫", "🌟", "💖"];
-  return text.split("").map(c => {
-    if (c === " ") return " ";
-    return symbols[Math.floor(Math.random()*symbols.length)] + c;
-  }).join("");
+// دالة لصنع صندوق مزخرف حول النص
+function boxTitle(text) {
+  const line = "━".repeat(text.length + 4);
+  return `┏${line}┓\n┃  ${text}  ┃\n┗${line}┛`;
 }
 
 module.exports.run = async function({ api, event }) {
@@ -38,7 +35,7 @@ module.exports.run = async function({ api, event }) {
 
   const keys = Object.keys(categories);
   keys.forEach((cat, i) => {
-    msg += `${i + 1} ⟢ فئة ${decorateTitle(cat)}\n`;
+    msg += `${i + 1} ⟢ ${boxTitle(cat)}\n`;
   });
 
   msg += `╰━━━━━━━━━━━━━━━━╯\n`;
