@@ -12,7 +12,6 @@ module.exports.config = {
 const SMART = require("../sera/smartSystem");
 const OWNER_ID = "61577861540407";
 
-// تعريف الفئات والأوامر
 const categories = {
   "ترفيه": ["تخييلي","مغادرةالكل","سلاحي","اطرديني","ترامب","مستوى","اكشن","هدية","شخصية","كت","كنية","لوخيروك","اقتباسات","اذكار","باند","كهف","احسب","adc","سرقة","موتي","دراما","فيس","جزاء","رفع","غموض","هكر","اوامر","تيد","ترحيب","مقص","كابوي"],
   "الذكاء والصور": ["اصفعي","حضن","معلمي","المطور","مزخرف"],
@@ -21,7 +20,6 @@ const categories = {
   "المتفرقات": ["اضحك","مزاح","نكت","معلومات","نقل"]
 };
 
-// دالة لصنع صندوق مزخرف حول النص
 function boxTitle(text) {
   const line = "━".repeat(text.length + 4);
   return `┏${line}┓\n┃  ${text}  ┃\n┗${line}┛`;
@@ -29,7 +27,6 @@ function boxTitle(text) {
 
 module.exports.run = async function({ api, event }) {
   const { threadID } = event;
-
   let msg = `╭━━━━•╭━━━━•  𝑺𝑬𝑹𝑨 𝑪ℎ𝑨𝑵 •━━━━╮\n`;
   msg += `✨ أهلاً بك في قائمة الفئات ✨\n`;
   msg += `اختر رقم الفئة ليتم عرض أوامرها:\n\n`;
@@ -39,60 +36,19 @@ module.exports.run = async function({ api, event }) {
     msg += `${i + 1} ⟢ ${boxTitle(cat)}\n`;
   });
 
-  msg += `╰━━━━━━━━━━━━━━━━╯\n`;
-  msg += `💻 بواسطة: Sera Chan | 2026`;
-
+  msg += `╰━━━━━━━━━━━━━━━━╯\n💻 بواسطة: Sera Chan | 2026`;
   return api.sendMessage(msg, threadID);
 };
 
 module.exports.handleEvent = async function({ api, event }) {
-  const { threadID, body, messageID, messageReply, senderID } = event;
+  const { threadID, body, messageReply, senderID } = event;
   if (!body) return;
 
-  // أوامر المطوّر
-  if (senderID === OWNER_ID) {
-    if (body === ".اون") {
-      SMART.toggleSystem(true);
-      return api.sendMessage("✅ تم تشغيل النظام الذكي", threadID);
-    }
-    if (body === ".اوف") {
-      SMART.toggleSystem(false);
-      return api.sendMessage("⛔ تم إيقاف النظام الذكي", threadID);
-    }
-
-    if (body.startsWith("-زيادة ")) {
-      const parts = body.split(" ");
-      if (parts.length === 3) {
-        const userID = parts[1].replace("@","");
-        const amount = parseInt(parts[2]);
-        const users = require("../sera/users.json");
-        if (!users[userID]) return api.sendMessage("❌ هذا العضو غير موجود", threadID);
-        users[userID].money = (users[userID].money || 0) + amount;
-        require("fs-extra").writeJsonSync("./sera/users.json", users, { spaces: 2 });
-        return api.sendMessage(`💰 تم إضافة ${amount} عملات لـ ${userID}`, threadID);
-      }
-    }
-  }
-
-  // التحقق من تفعيل النظام
   if (!SMART.isEnabled()) return;
 
-  // التفاعل الذكي
-  const name = event.senderName || "User";
-  SMART.initUser(senderID, name);
+  SMART.initUser(senderID, event.senderName || "User");
   SMART.logInteraction(senderID, body);
 
-  const users = require("../sera/users.json");
-  const user = users[senderID];
-  const q = SMART.getSmartQuestion(user);
-
-  if (q && !body.startsWith(".") && !body.startsWith("-")) {
-    return api.sendMessage(q, threadID);
-  }
-
-  if (q) SMART.applyAnswer(senderID, body);
-
-  // التفاعل مع الرد على .اوامر
   if (messageReply && messageReply.body.includes("أهلاً بك في قائمة الفئات")) {
     const choice = parseInt(body.trim());
     const keys = Object.keys(categories);
@@ -105,5 +61,4 @@ module.exports.handleEvent = async function({ api, event }) {
       return api.sendMessage(msg, threadID);
     }
   }
-
 };
