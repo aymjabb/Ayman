@@ -1,45 +1,47 @@
+const SERA = require("../seraCore");
+
 module.exports.config = {
   name: "سيرا",
-  version: "1.0.0",
+  version: "1.0.1",
   hasPermssion: 0,
   credits: "Sera Chan",
-  description: "تحكم بشخصية سيرا",
+  description: "التحكم بشخصية سيرا تشان",
   commandCategory: "system",
   usages: ".سيرا",
   cooldowns: 0
 };
 
-if (!global.SERA) {
-  global.SERA = {
-    MODE: "NORMAL",
-    OWNER: "61577861540407"
-  };
-}
-
 module.exports.run = async function({ api, event }) {
   const { senderID, threadID, body } = event;
 
-  if (senderID !== global.SERA.OWNER)
-    return api.sendMessage("⛔ هذا الأمر ليس لك.", threadID);
+  // حماية: فقط المالك
+  if (senderID !== SERA.OWNER) {
+    return api.sendMessage("⛔ هذا الأمر مخصص للمالك فقط.", threadID);
+  }
 
+  // تفعيل الوضع المرعب
   if (body.includes("ابنة ابليس")) {
-    global.SERA.MODE = "DEVIL";
+    SERA.MODE = "DEVIL";
     return api.sendMessage(
       "🩸 تم تفعيل وضع ابنة إبليس.\n👁️ سيرا تشان تراقب الجميع.",
       threadID
     );
   }
 
+  // الرجوع للوضع اللطيف
   if (body.includes("ابنة ايمن")) {
-    global.SERA.MODE = "NORMAL";
+    SERA.MODE = "NORMAL";
     return api.sendMessage(
       "🩷 عادت سيرا تشان.\n😼 تحبك… والبقية؟ نتسلى عليهم.",
       threadID
     );
   }
 
-  api.sendMessage(
-    "اكتب:\n.سيرا ابنة ابليس\nأو\n.سيرا ابنة ايمن",
+  // رسالة المساعدة
+  return api.sendMessage(
+    "👁️ أوامر سيرا:\n\n" +
+    "• .سيرا ابنة ابليس ← وضع مرعب\n" +
+    "• .سيرا ابنة ايمن ← وضع لطيف",
     threadID
   );
 };
