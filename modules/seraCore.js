@@ -2,10 +2,10 @@ module.exports = {
   MODE: "NORMAL",
   OWNER: "61577861540407",
 
-  WATCH: {},        // مراقبة أشخاص
+  WATCH: {},        // مراقبة
   STRIKES: {},      // مخالفات
   SILENT: {},       // صامتين
-  LEFT_LOG: [],     // المطرودين / اللي خرجوا
+  LEFT_LOG: [],     // سجل المطرودين / الخارجين
 
-  MAX_STRIKES: 4    // بعد 4 مخالفات → إجراء
+  MAX_STRIKES: 4
 };
