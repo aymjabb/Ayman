@@ -6,15 +6,15 @@ const path = require("path");
 const poems = [
   { poet: "المتنبي", lines: ["إِذَا غـــامَرْتَ فِي شَـرَفٍ مَــرُومِ", "فَــلا تَـقْـنَــعْ بِـمَا دُونَ النُّجُــومِ"] },
   { poet: "أحمد شوقي", lines: ["قِـمْ لِلْمُعَلِّمِ وَفِّهِ التَّبْجِيـلَا", "كَـادَ الْـمُعَلِّمُ أَنْ يَـكُونَ رَسُـولَا"] },
-  { poet: "نزار قباني", lines: ["هـو الحُـبُ أَنْ تـعـيـشَ مَعَ مَن تُـحِبُّ", "هـو أَنْ تَمُـوتَ عَلَى فِكْـرَةِ الحُـبِّ"] }
+  { poet: "نزار قباني", lines: ["هـو الحُـبُ أَنْ تـع-يـشَ مَعَ مَن تُ-حِبُّ", "هـو أَنْ تَمُ-وتَ عَلَى فِكْ-رَةِ الحُ-بِّ"] }
 ];
 
 module.exports.config = {
   name: "المطور",
-  version: "11.0.0",
+  version: "12.0.0",
   hasPermssion: 0,
   credits: "Sera Chan & Ayman",
-  description: "عرض معلومات المطور مع ميزات الهيبة والتعريف الشخصي ✨",
+  description: "معلومات المطور مع صور شخصية وصور أنمي هيبة متغيرة ✨",
   commandCategory: "المطور",
   usages: ".المطور",
   cooldowns: 5
@@ -24,33 +24,35 @@ module.exports.run = async ({ api, event }) => {
   const { threadID, messageID, senderID } = event;
   const ayID = "61577861540407"; // الآيدي الخاص بك
 
-  // --- قائمة صورك الشخصية (تتغير كل مرة) ---
+  // --- قائمة صورك الشخصية (تتغير عشوائياً) ---
   const aymanImages = [
     "https://i.ibb.co/Mx3x6c4y/temp-1767664619825.jpg",
     "https://i.imgur.com/k6O6P6X.jpg",
     "https://i.imgur.com/mXWf9Z0.jpg"
   ];
 
-  // --- قائمة GIFs أنمي أسطورية (تتغير كل مرة) ---
-  const animeGifs = [
-    "https://i.pinimg.com/originals/f3/78/33/f37833054366657c919793f773347b74.gif",
-    "https://i.pinimg.com/originals/11/49/71/114971c22c073f3241b7f03577317737.gif",
-    "https://i.pinimg.com/originals/81/29/49/8129497e70390467558f3348123c52e1.gif"
+  // --- قائمة صور أنمي هيبة وفخمة (ثابتة وليست GIF) ---
+  const animeHighQuality = [
+    "https://i.pinimg.com/originals/7e/1a/0b/7e1a0b368739167c71f544f84c98f804.jpg",
+    "https://i.pinimg.com/originals/cf/d0/5d/cfd05d70f900e57628859736c96b7978.jpg",
+    "https://i.pinimg.com/originals/2d/e3/3e/2de33e72081f9a1f49673836886e37e9.jpg",
+    "https://i.pinimg.com/originals/60/9e/f4/609ef478c909e735e02798f98d578b61.jpg",
+    "https://i.pinimg.com/originals/94/d9/3c/94d93c1b69d95f462a42080a90586e36.jpg"
   ];
 
   try {
     const randomImg = aymanImages[Math.floor(Math.random() * aymanImages.length)];
-    const randomGif = animeGifs[Math.floor(Math.random() * animeGifs.length)];
+    const randomAnime = animeHighQuality[Math.floor(Math.random() * animeHighQuality.length)];
     const randomPoem = poems[Math.floor(Math.random() * poems.length)];
 
     const imgPath = path.join(__dirname, "cache", `ayman_${Date.now()}.jpg`);
-    const gifPath = path.join(__dirname, "cache", `anime_${Date.now()}.gif`);
+    const animePath = path.join(__dirname, "cache", `anime_${Date.now()}.jpg`);
 
     const imgRes = await axios.get(randomImg, { responseType: "arraybuffer" });
-    const gifRes = await axios.get(randomGif, { responseType: "arraybuffer" });
+    const animeRes = await axios.get(randomAnime, { responseType: "arraybuffer" });
 
     fs.outputFileSync(imgPath, Buffer.from(imgRes.data));
-    fs.outputFileSync(gifPath, Buffer.from(gifRes.data));
+    fs.outputFileSync(animePath, Buffer.from(animeRes.data));
 
     let poemText = `╭─────── ✦🌌✦ ───────╮\n👑 شاعر: ${randomPoem.poet}\n`;
     randomPoem.lines.forEach(line => { poemText += `☁️ ${line}\n`; });
@@ -79,18 +81,18 @@ ${poemText}
 ⚡┃ 𝗗𝗲𝘃 • 𝗦𝗲𝗰𝘂𝗿𝗶𝘁𝘆 • 𝗚𝗮𝗺𝗲𝘀
 🔥┃ 𝗔𝗻𝗶𝗺𝗲 • 𝗛𝗮𝗰𝗸𝗲𝗿 • 𝗩𝗜𝗣
 
-✨ 「 الهيبة لا تُشترى، بل تُصنع بيد أيمن البكري 」 ✨
+✨ 「 الهيبة تُخلق معك، ولا تُستعار.. بصمة أيمن البكري 」 ✨
 `;
 
     return api.sendMessage({
       body: infoMsg,
-      attachment: [fs.createReadStream(imgPath), fs.createReadStream(gifPath)]
+      attachment: [fs.createReadStream(imgPath), fs.createReadStream(animePath)]
     }, threadID, () => {
       if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
-      if (fs.existsSync(gifPath)) fs.unlinkSync(gifPath);
+      if (fs.existsSync(animePath)) fs.unlinkSync(animePath);
     }, messageID);
 
   } catch (e) {
-    return api.sendMessage("🥺 سيرا فشلت في جلب صور الهيبة.. جرب مرة ثانية!", threadID, messageID);
+    return api.sendMessage("🥺 سيرا واجهت مشكلة في تحميل الصور.. جرب مرة ثانية!", threadID, messageID);
   }
 };
