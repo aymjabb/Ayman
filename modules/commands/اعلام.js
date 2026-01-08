@@ -1,6 +1,6 @@
 module.exports.config = {
   name: "اعلام",
-  version: "2.5.0",
+  version: "2.6.0",
   hasPermssion: 0,
   credits: "عمر & سيرا تشان",
   description: "لعبة احزر العلم مع سيرا اللطيفة ✨",
@@ -27,53 +27,67 @@ module.exports.handleReply = async function ({ api, event, handleReply, Currenci
 };
 
 module.exports.run = async function ({ api, event }) {
+  const { threadID, messageID, senderID } = event;
+  
+  // قائمة أعلام بروابط ثابتة ومجربة
   const questions = [
-    { image: "https://i.imgur.com/vHqQ9Wv.png", answer: "السعودية" },
-    { image: "https://i.imgur.com/k9vE8p0.png", answer: "مصر" },
-    { image: "https://i.imgur.com/6XN5lOa.png", answer: "العراق" },
-    { image: "https://i.imgur.com/r6O5Msh.png", answer: "الجزائر" },
-    { image: "https://i.imgur.com/3N4oU9F.png", answer: "المغرب" },
-    { image: "https://i.imgur.com/8N4N3u8.png", answer: "فلسطين" },
-    { image: "https://i.imgur.com/wVf590z.png", answer: "سوريا" },
-    { image: "https://i.imgur.com/XU7qE80.png", answer: "تونس" },
-    { image: "https://i.imgur.com/Dba8SLo.png", answer: "اليمن" },
-    { image: "https://i.imgur.com/jV7vE5z.png", answer: "الأردن" },
-    { image: "https://i.imgur.com/9O3X8uC.png", answer: "لبنان" },
-    { image: "https://i.imgur.com/pYxH9pY.png", answer: "الإمارات" },
-    { image: "https://i.imgur.com/4zYfF0S.png", answer: "الكويت" },
-    { image: "https://i.imgur.com/vL7X6M0.png", answer: "قطر" },
-    { image: "https://i.imgur.com/mUvN9O8.png", answer: "عمان" },
-    { image: "https://i.imgur.com/L7X6M0p.png", answer: "ليبيا" },
-    { image: "https://i.imgur.com/R3zY8nC.png", answer: "السودان" },
-    { image: "https://i.imgur.com/2X8pYnC.png", answer: "موريتانيا" },
-    { image: "https://i.imgur.com/vH9Pz8L.png", answer: "تركيا" },
-    { image: "https://i.imgur.com/pYvM8nC.png", answer: "اليابان" },
-    { image: "https://i.imgur.com/9O3mPzL.png", answer: "البرازيل" },
-    { image: "https://i.imgur.com/mU8P0zK.png", answer: "روسيا" },
-    { image: "https://i.imgur.com/6XzY7pL.png", answer: "فرنسا" },
-    { image: "https://i.imgur.com/8VvD3pM.png", answer: "ألمانيا" }
+    { image: "https://flagcdn.com/w640/sa.png", answer: "السعودية" },
+    { image: "https://flagcdn.com/w640/eg.png", answer: "مصر" },
+    { image: "https://flagcdn.com/w640/iq.png", answer: "العراق" },
+    { image: "https://flagcdn.com/w640/dz.png", answer: "الجزائر" },
+    { image: "https://flagcdn.com/w640/ma.png", answer: "المغرب" },
+    { image: "https://flagcdn.com/w640/ps.png", answer: "فلسطين" },
+    { image: "https://flagcdn.com/w640/sy.png", answer: "سوريا" },
+    { image: "https://flagcdn.com/w640/tn.png", answer: "تونس" },
+    { image: "https://flagcdn.com/w640/ye.png", answer: "اليمن" },
+    { image: "https://flagcdn.com/w640/jo.png", answer: "الأردن" },
+    { image: "https://flagcdn.com/w640/lb.png", answer: "لبنان" },
+    { image: "https://flagcdn.com/w640/ae.png", answer: "الإمارات" },
+    { image: "https://flagcdn.com/w640/kw.png", answer: "الكويت" },
+    { image: "https://flagcdn.com/w640/qa.png", answer: "قطر" },
+    { image: "https://flagcdn.com/w640/om.png", answer: "عمان" },
+    { image: "https://flagcdn.com/w640/ly.png", answer: "ليبيا" },
+    { image: "https://flagcdn.com/w640/sd.png", answer: "السودان" },
+    { image: "https://flagcdn.com/w640/mr.png", answer: "موريتانيا" },
+    { image: "https://flagcdn.com/w640/tr.png", answer: "تركيا" },
+    { image: "https://flagcdn.com/w640/jp.png", answer: "اليابان" },
+    { image: "https://flagcdn.com/w640/br.png", answer: "البرازيل" },
+    { image: "https://flagcdn.com/w640/ru.png", answer: "روسيا" },
+    { image: "https://flagcdn.com/w640/fr.png", answer: "فرنسا" },
+    { image: "https://flagcdn.com/w640/de.png", answer: "ألمانيا" }
   ];
 
   const randomQuestion = questions[Math.floor(Math.random() * questions.length)];
-  const cachePath = __dirname + `/cache/flag_${event.senderID}.jpg`;
+  const cachePath = __dirname + `/cache/flag_${senderID}.png`;
 
   try {
-    const response = await axios.get(randomQuestion.image, { responseType: 'arraybuffer' });
+    // استخدام Headers لتجنب الحظر عند التحميل
+    const response = await axios.get(randomQuestion.image, { 
+      responseType: 'arraybuffer',
+      headers: { 'User-Agent': 'Mozilla/5.0' }
+    });
+    
     fs.outputFileSync(cachePath, Buffer.from(response.data, 'binary'));
 
     return api.sendMessage({
       body: "╭──── • ◈ • ────╮\n  اسرع واحد يحزر العلم؟ 🚩\n╰──── • ◈ • ────╯\n\nرد على الصورة بالإجابة الصحيحة يا مبدع/ة! ✨",
       attachment: fs.createReadStream(cachePath)
-    }, event.threadID, (err, info) => {
+    }, threadID, (err, info) => {
+      if (err) return console.error(err);
+      
       global.client.handleReply.push({
         name: this.config.name,
         messageID: info.messageID,
         correctAnswer: randomQuestion.answer,
-        author: event.senderID
+        author: senderID
       });
-      if (fs.existsSync(cachePath)) fs.unlinkSync(cachePath);
-    }, event.messageID);
+      
+      // حذف الصورة بعد ثانية من الإرسال لضمان وصولها
+      setTimeout(() => { if (fs.existsSync(cachePath)) fs.unlinkSync(cachePath); }, 2000);
+    }, messageID);
+
   } catch (e) {
-    return api.sendMessage("سيرا تعبانة شوي وما قدرت تجيب الصورة.. حاول مرة ثانية 🥺💔", event.threadID);
+    console.log(e);
+    return api.sendMessage("سيرا تعبانة شوي وما قدرت تجيب الصورة.. جرب مرة ثانية الحين! 🥺💔", threadID);
   }
 };
