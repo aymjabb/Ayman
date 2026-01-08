@@ -1,77 +1,91 @@
+const fs = require("fs");
+const path = require("path");
+
 module.exports.config = {
-  name: "انقلاب",
-  version: "2.0.0",
-  hasPermssion: 0,
-  credits: "Sera Chan",
-  description: "حماية إدارية دائمة + تعطيل يدوي",
+  name: "تسونامي",
+  version: "5.0.0",
+  hasPermssion: 2, 
+  credits: "Sera Chan & Ayman",
+  description: "نظام حماية الإدارة المطلق - حماية أيمن والبوت تلقائياً 🌊",
   commandCategory: "حماية",
-  cooldowns: 0
+  cooldowns: 5
 };
 
-// الايديهات المحمية (مستحيل ينزلون)
-const PROTECTED = [
-  "61586019840418", // سيرا تشان
-  "61577861540407" // ايديك
-];
+// آيدي الزعيم أيمن (ثابت)
+const AYMAN_ID = "61577861540407";
 
-// تخزين حالة الإيقاف
-const stoppedThreads = new Set();
+const statusPath = path.join(__dirname, "cache", "tsunamiStatus.json");
+if (!fs.existsSync(statusPath)) fs.writeFileSync(statusPath, "{}");
 
-/* ================== */
-/*  أمر الإيقاف فقط   */
-/* ================== */
-module.exports.run = async ({ api, event }) => {
-  const { threadID } = event;
-
-  stoppedThreads.add(threadID);
-
-  return api.sendMessage(
-`╭━━━━━━〔 💣 𝗦𝗘𝗥𝗔 〕━━━━━━╮
-🚫 تم تعطيل الانقلاب
-الكل صار يلعب براحتو
-╰━━━━━━━━━━━━━━━━━━━━╯`,
-    threadID,
-    event.messageID
-  );
-};
-
-/* ================== */
-/*  الحماية التلقائية */
-/* ================== */
 module.exports.handleEvent = async ({ api, event }) => {
-  const { logMessageType, logMessageData, threadID } = event;
+  const { logMessageType, logMessageData, threadID, author } = event;
+  const status = JSON.parse(fs.readFileSync(statusPath, "utf-8"));
 
-  // إذا موقوف في هذا الكروب → تجاهل
-  if (stoppedThreads.has(threadID)) return;
+  if (status[threadID] === "OFF") return;
 
-  // نراقب فقط تغييرات الأدمن
-  if (logMessageType !== "log:thread-admins") return;
+  // جلب آيدي البوت الحالي تلقائياً دون الحاجة لكتابته
+  const botID = api.getCurrentUserID();
+  const PROTECTED_LIST = [AYMAN_ID, botID];
 
-  const targetID = String(logMessageData?.TARGET_ID);
-  if (!PROTECTED.includes(targetID)) return;
+  // مراقبة تغييرات الإدارة
+  if (logMessageType === "log:thread-admins") {
+    const targetID = String(logMessageData?.TARGET_ID);
+    
+    // إذا تمت محاولة إنزالك أو إنزال البوت من الإدارة
+    if (PROTECTED_LIST.includes(targetID)) {
+      
+      // 1. طرد المعتدي فوراً (إلا إذا كان المعتدي هو أنت)
+      if (String(author) !== AYMAN_ID) {
+        try {
+          await api.removeUserFromGroup(author, threadID);
+        } catch (e) { console.log("فشل طرد المعتدي") }
+      }
 
-  const info = await api.getThreadInfo(threadID);
+      // 2. تنظيف الإدارة من البقية لضمان السيطرة
+      const info = await api.getThreadInfo(threadID);
+      for (const admin of info.adminIDs) {
+        if (!PROTECTED_LIST.includes(String(admin.id))) {
+          try {
+            await api.changeAdminStatus(threadID, admin.id, false);
+          } catch (e) {}
+        }
+      }
 
-  // إنزال كل الأدمنية غير المحميين
-  for (const admin of info.adminIDs) {
-    if (!PROTECTED.includes(String(admin.id))) {
+      // 3. إعادة تنصيب العضو المحمي (أنت أو البوت)
       try {
-        await api.changeAdminStatus(threadID, admin.id, false);
-      } catch {}
+        await api.changeAdminStatus(threadID, targetID, true);
+      } catch (e) {}
+
+      return api.sendMessage(
+`🌊 إعـصـار الـتـسـونـامـي!! 🌊
+──────────────────
+⚠️ كشف محاولة غدر ضد الإدارة العليا!
+👑 تم سحق المعتدي وإعادة السيطرة لـ أيمن وسيرا.
+
+النظام الآن تحت الحماية المطلقة.`, threadID);
     }
   }
+};
 
-  // إعادة المحميين أدمن
-  for (const id of PROTECTED) {
-    try {
-      await api.changeAdminStatus(threadID, id, true);
-    } catch {}
+module.exports.run = async ({ api, event, args }) => {
+  const { threadID, messageID } = event;
+  const status = JSON.parse(fs.readFileSync(statusPath, "utf-8"));
+
+  if (args[0] === "تشغيل") {
+    status[threadID] = "ON";
+    fs.writeFileSync(statusPath, JSON.stringify(status, null, 2));
+    return api.sendMessage("🌊 تسونامي الحماية مفعل! أنت والبوت في أمان كامل. 🛡️", threadID, messageID);
+  } 
+  
+  if (args[0] === "إيقاف") {
+    status[threadID] = "OFF";
+    fs.writeFileSync(statusPath, JSON.stringify(status, null, 2));
+    return api.sendMessage("🚫 تم إيقاف التسونامي..", threadID, messageID);
   }
 
-  api.sendMessage(
-`☠️ محاولة فاشلة
-👑 سيرا تشان خط أحمر
-🧹 تم تنظيف الإدارة`,
-    threadID
-  );
+  return api.sendMessage(
+`❓ التحكم في تسونامي:
+──────────────────
+🌊 للتشغيل: .تسونامي تشغيل
+🚫 للإيقاف: .تسونامي إيقاف`, threadID, messageID);
 };
