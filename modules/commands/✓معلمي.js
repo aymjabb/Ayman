@@ -3,41 +3,58 @@ const fs = require("fs-extra");
 const path = require("path");
 
 module.exports.config = {
-    name: "معلمي",
-    version: "1.0.0",
-    hasPermssion: 0,
-    credits: "Sera Chan",
-    description: "شكر وتهنئة للمعلم مع الصورة",
-    commandCategory: "معلومات",
-    usages: "-معلمي",
-    cooldowns: 5
+  name: "معلمي",
+  version: "2.5.0",
+  hasPermssion: 0,
+  credits: "Sera Chan & Ayman",
+  description: "رسالة شكر وتقدير للمعلم الذي علم أيمن صناعة البوت ✨",
+  commandCategory: "معلومات",
+  usages: ".معلمي",
+  cooldowns: 5
 };
 
 module.exports.run = async function({ api, event }) {
-    const { threadID } = event;
+  const { threadID, messageID } = event;
 
-    const imgURL = "https://i.ibb.co/6w7G8Lq/avatar.jpg"; // صورة المعلم
-    const cacheDir = path.join(__dirname, "cache");
-    if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
+  // رابط الصورة المدمجة (المعلم شيفو وحساب المعلم)
+  const imgURL = "https://i.ibb.co/6w7G8Lq/avatar.jpg"; 
+  
+  const cacheDir = path.join(__dirname, "cache");
+  if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
 
-    const imgPath = path.join(cacheDir, "teacher.jpg");
+  const imgPath = path.join(cacheDir, `sensei_${Date.now()}.jpg`);
 
-    try {
-        // تحميل الصورة
-        const res = await axios.get(imgURL, { responseType: "arraybuffer" });
-        fs.writeFileSync(imgPath, Buffer.from(res.data));
+  try {
+    // تحميل الصورة
+    const res = await axios.get(imgURL, { responseType: "arraybuffer" });
+    fs.writeFileSync(imgPath, Buffer.from(res.data));
 
-        // رسالة شكر وتهنئة
-        const msg = `🌸 سلام من سيرا تشان! 🌸\n\n🙏 شكراً لك أيها المعلم على كل ما قدمته من دعم وتعليم.\n🎉 تهانينا ومزيد من التوفيق والنجاح!`;
+    // رسالة شكر مرتبة بطابع سيرا تشان
+    const msg = `
+🌸 سـلامٌ مـن سـيـرا تـشـان! 🌸
+──────────────────
+✨ إلـى الـمـعـلـم الـفـاضـل.. ✨
 
-        // إرسال الرسالة مع الصورة
-        await api.sendMessage({
-            body: msg,
-            attachment: fs.createReadStream(imgPath)
-        }, threadID, () => fs.unlinkSync(imgPath));
+🙏 يـسـرّنـي أن أقـدم لـك خـالـص الـشـكـر والـتـقـديـر، فـأنـت مـن وضـع حـجـر الأسـاس وألـهـم أيـمـن لـصـنـاعـتـي وتـطـويـري.
 
-    } catch (e) {
-        console.error(e);
-        api.sendMessage("❌ حدث خطأ أثناء إرسال رسالة المعلم.", threadID);
-    }
+📖 "بـفـضـل تـعـلـيـمـك وبـرعـتـك، أصـبـح لـلإبـداع عـنـوان."
+
+💖 شـكـراً لـك يـا سـيـدي عـلـى كـل وقـتـك ومـجـهـودك.. سيرا وأيمن يـمـتـنّـان لـك للأبـد! 🐾
+
+──────────────────
+🔗 حـسـاب الـمـعـلـم:
+https://www.facebook.com/profile.php?id=61584059280197
+`;
+
+    return api.sendMessage({
+      body: msg,
+      attachment: fs.createReadStream(imgPath)
+    }, threadID, () => {
+      // حذف الصورة بعد الإرسال
+      if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
+    }, messageID);
+
+  } catch (e) {
+    return api.sendMessage("🥺 سـيرا تـشـان تـعتذر.. فشلت في تحميل صورة المعلم حالياً، حاول مرة أخرى!", threadID, messageID);
+  }
 };
