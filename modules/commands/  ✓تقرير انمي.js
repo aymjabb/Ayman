@@ -1,103 +1,67 @@
 module.exports.config = {
   name: "تقرير",
-  version: "2.0.0",
+  version: "2.5.0",
   hasPermssion: 0,
-  credits: "عبالرحمن",
-  description: "تقرير أنمي منسق وجميل بطابع سيرا 🐱",
-  commandCategory: "خدمات",
+  credits: "عبالرحمن & سيرا تشان",
+  description: "تقرير أنمي منسق وجميل بطابع سيرا اللطيفة 🐱✨",
+  commandCategory: "خدمات سيرا",
   usages: "[اسم الانمي]",
   cooldowns: 5
 };
 
-module.exports.run = async ({ api, event }) => {
+module.exports.run = async ({ api, event, args }) => {
   const axios = require("axios");
   const Scraper = require("mal-scraper");
-  const request = require("request");
-  const fs = require("fs");
+  const fs = require("fs-extra");
 
-  // استخرج اسم الأنمي من الرسالة
-  let input = event.body || "";
-  if (!input) return api.sendMessage("⚠️ | يرجى كتابة اسم الأنمي بعد الأمر.", event.threadID, event.messageID);
-  let query = input.replace(/^\S+\s*/, ""); // إزالة الأمر من بداية الرسالة
+  const { threadID, messageID, senderID } = event;
+  let query = args.join(" ");
 
-  api.sendMessage(`🔎 | جاري البحث عن "${query}"... 🐱`, event.threadID, event.messageID);
+  if (!query) return api.sendMessage("╭──── • ◈ • ────╮\n  يوه! اكتب اسم الأنمي أولاً ✨\n╰──── • ◈ • ────╯", threadID, messageID);
 
-  let Anime;
+  api.sendMessage(`✨ سيرا تبحث لك عن "${query}".. لحظة بس! 🐾`, threadID, messageID);
+
   try {
-    Anime = await Scraper.getInfoFromName(query);
+    const Anime = await Scraper.getInfoFromName(query);
+
+    if (!Anime) throw new Error("لم يتم العثور على الأنمي");
+
+    // تجهيز المسار للصورة
+    const path = __dirname + `/cache/anime_${senderID}.png`;
+    const getImg = (await axios.get(Anime.picture, { responseType: "arraybuffer" })).data;
+    fs.writeFileSync(path, Buffer.from(getImg, "utf-8"));
+
+    // تنسيق الرسالة بأسلوب سيرا المزخرف
+    const message = `╭──── • ◈ • ────╮
+  🐾 تـقـريـر أنـمـي سـيـرا 🐾
+╰──── • ◈ • ────╯
+
+💖 الـاسـم: ${Anime.title}
+🈶 بـالياباني: ${Anime.japaneseTitle || "لا يوجد"}
+🎬 الـنـوع: ${Anime.type}
+📊 الـحـالـة: ${Anime.status}
+📺 الـحـلقـات: ${Anime.episodes || "غير معروف"}
+⏳ الـمـدة: ${Anime.duration || "غير معروف"}
+⭐ الـتـقـيـيـم: ${Anime.score || "لا يوجد"}
+🏆 الـتـرتـيـب: ${Anime.ranked || "غير معروف"}
+📌 الـتـصـنيـف: ${Anime.rating || "الكل"}
+🎭 الأنـواع: ${Anime.genres ? Anime.genres.join(", ") : "غير محدد"}
+🏢 الاسـتوديو: ${Anime.studios ? Anime.studios.join(", ") : "غير معروف"}
+
+📝 مـلـخـص الـقـصـة:
+${Anime.synopsis ? Anime.synopsis.slice(0, 500) + "..." : "لا يوجد ملخص متوفر حالياً 🥺"}
+
+🔗 رابـط MAL: ${Anime.url}
+
+✨ سـيـرا تـتـمـنى لـك مـشـاهـدة مـمـتـعـة! ✨`;
+
+    return api.sendMessage({
+      body: message,
+      attachment: fs.createReadStream(path)
+    }, threadID, () => fs.unlinkSync(path), messageID);
+
   } catch (err) {
-    return api.sendMessage("⚠️ | حدث خطأ أثناء البحث عن الأنمي: " + err, event.threadID, event.messageID);
+    console.error(err);
+    return api.sendMessage("🥺 سيرا دورت ودورت بس ما لقت هذا الأنمي.. تأكد من الاسم بالانجليزي يا عسل!", threadID, messageID);
   }
-
-  // التحقق من بعض الحقول
-  if (!Anime.genres || Anime.genres.length === 0) Anime.genres = ["None"];
-  if (!Anime.studios || Anime.studios.length === 0) Anime.studios = ["Unknown"];
-  if (!Anime.producers || Anime.producers.length === 0) Anime.producers = ["Unknown"];
-  
-  const {
-    title,
-    japaneseTitle,
-    type,
-    status,
-    premiered,
-    broadcast,
-    aired,
-    producers,
-    studios,
-    source,
-    episodes,
-    duration,
-    genres,
-    popularity,
-    ranked,
-    score,
-    rating,
-    synopsis,
-    picture,
-    url,
-    end_date
-  } = Anime;
-
-  // تنسيق الرسالة بشكل جميل
-  const message = 
-`🐱✨ تقرير أنمي سيرا ✨🐱
-💖 الاسم: ${title}
-🈶 الاسم بالياباني: ${japaneseTitle}
-🎬 النوع: ${type}
-📊 الحالة: ${status}
-📅 بدأ العرض: ${premiered || "Unknown"}
-🕒 البث: ${broadcast || "Unknown"}
-📅 المدة: ${aired || "Unknown"}
-🏢 الاستوديو: ${studios.join(", ")}
-🎥 الإنتاج: ${producers.join(", ")}
-📚 المصدر: ${source || "Unknown"}
-📺 الحلقات: ${episodes || "Unknown"}
-⏳ مدة الحلقة: ${duration || "Unknown"}
-📌 التصنيف: ${rating || "Unknown"}
-🏆 الترتيب: ${ranked || "Unknown"}
-🔥 الشعبية: ${popularity || "Unknown"}
-⭐ التقييم: ${score || "Unknown"}
-🎭 الأنواع: ${genres.join(", ")}
-
-📝 ملخص: 
-${synopsis}
-
-🔗 رابط MAL: ${url}
-🆔 التقرير من تطوير: عبالرحمن | آيدي: ${event.senderID}
-`;
-
-  // تحميل الصورة
-  const ext = picture.substring(picture.lastIndexOf(".") + 1);
-  const pathImg = __dirname + `/cache/mal.${ext}`;
-
-  request(picture)
-    .pipe(fs.createWriteStream(pathImg))
-    .on("close", () => {
-      api.sendMessage(
-        { body: message, attachment: fs.createReadStream(pathImg) },
-        event.threadID,
-        () => fs.unlinkSync(pathImg),
-        event.messageID
-      );
-    });
 };
