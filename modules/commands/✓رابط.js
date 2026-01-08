@@ -1,67 +1,76 @@
-const axios = require('axios');
+const axios = require("axios");
+const fs = require("fs");
+const path = require("path");
+
+const GEMINI_KEY = "AIzaSyALQBlieI5xur3yh0tT69MY36e353tBjuA";
 
 module.exports.config = {
-  name: "رابط",
-  version: "1.5.0",
+  name: "تعديل",
+  version: "1.0.0",
   hasPermssion: 0,
-  credits: "عمر & سيرا تشان",
-  description: "تحويل صورك لروابط Imgur دائمة ✨",
-  usePrefix: true,
-  commandCategory: "خدمات سيرا",
-  usages: "[رد على صورة]",
-  cooldowns: 5
+  credits: "anas",
+  description: "تعديل / تحسين صورة باستخدام Gemini",
+  commandCategory: "🖼️ صور",
+  usages: "تعديل <وصف>",
+  cooldowns: 10
 };
 
-module.exports.run = async ({ api, event }) => {
-  const { threadID, messageID, messageReply, type, attachments } = event;
-  let links = [];
+module.exports.run = async function ({ api, event, args }) {
+  try {
+    if (!event.messageReply || !event.messageReply.attachments[0])
+      return api.sendMessage(
+        "❌ رد على صورة واكتب وصف التعديل\nمثال:\nتعديل خليها أنمي",
+        event.threadID,
+        event.messageID
+      );
 
-  // جلب الروابط من الرد أو المرفقات المباشرة
-  if (type === "message_reply" && messageReply.attachments && messageReply.attachments.length > 0) {
-    for (let item of messageReply.attachments) {
-      if (item.type === "photo") links.push(item.url);
-    }
-  } else if (attachments && attachments.length > 0) {
-    for (let item of attachments) {
-      if (item.type === "photo") links.push(item.url);
-    }
-  }
+    const prompt = args.join(" ");
+    if (!prompt)
+      return api.sendMessage("❌ اكتب وصف التعديل", event.threadID);
 
-  if (links.length === 0) {
-    return api.sendMessage('╭──── • ◈ • ────╮\n  يوه! وين الصورة؟ ✨\n╰──── • ◈ • ────╯\n\n🐾 رد على صورة أو أرسلها مع الأمر عشان سيرا تعطيك الرابط المباشر! ✨', threadID, messageID);
-  }
+    const imgUrl = event.messageReply.attachments[0].url;
+    const imgPath = path.join(__dirname, `/cache/${Date.now()}.jpg`);
 
-  api.sendMessage(`✨ ثواني يا عسل.. سيرا قاعدة ترفع الصور للسحاب.. 🐾`, threadID, messageID);
+    const imgData = await axios.get(imgUrl, { responseType: "arraybuffer" });
+    fs.writeFileSync(imgPath, Buffer.from(imgData.data));
 
-  let result = [];
-  
-  for (let url of links) {
-    try {
-      // المحرك الأول: Imgur API المستقر
-      const res = await axios.get(`https://api.disite.xyz/imgur?url=${encodeURIComponent(url)}`);
-      if (res.data && res.data.url) {
-        result.push(res.data.url);
-      } else {
-        // المحرك الثاني الاحتياطي: Cloudinary/Imgur Proxy
-        const res2 = await axios.get(`https://api.sandipbaruwal.com/imgur?url=${encodeURIComponent(url)}`);
-        if (res2.data && res2.data.url) {
-          result.push(res2.data.url);
-        }
+    const base64Image = fs.readFileSync(imgPath, { encoding: "base64" });
+
+    const res = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=${GEMINI_KEY}`,
+      {
+        contents: [
+          {
+            parts: [
+              { text: `عدّل الصورة كالتالي:\n${prompt}` },
+              {
+                inlineData: {
+                  mimeType: "image/jpeg",
+                  data: base64Image
+                }
+              }
+            ]
+          }
+        ]
       }
-    } catch (e) {
-      console.log("خطأ في رفع صورة واحدة، جاري المحاولة مرة أخرى...");
-    }
+    );
+
+    const result =
+      res.data.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "❌ لم يتمكن الذكاء من تعديل الصورة";
+
+    fs.unlinkSync(imgPath);
+
+    api.sendMessage(
+      `✨ نتيجة التعديل:\n\n${result}`,
+      event.threadID
+    );
+
+  } catch (err) {
+    console.error(err);
+    api.sendMessage(
+      "⚠️ حصل خطأ أثناء تعديل الصورة\nتأكد من المفتاح أو الصورة",
+      event.threadID
+    );
   }
-
-  if (result.length === 0) {
-    return api.sendMessage('🥺 سيرا اعتذرت! السيرفرات الحين نايمة، جرب ترفع الصورة مرة ثانية بعد شوي.', threadID, messageID);
-  }
-
-  let replyMsg = `╭──── • ◈ • ────╮\n  تـم تـجـهـيـز الـروابـط ✨\n╰──── • ◈ • ────╯\n\n`;
-  result.forEach((link, i) => {
-    replyMsg += `🖼️ الـرابط ${i + 1}:\n🔗 ${link}\n\n`;
-  });
-  replyMsg += `🐾 سيرا تتمنى لك وقتاً ممتعاً! ✨`;
-
-  return api.sendMessage(replyMsg, threadID, messageID);
 };
