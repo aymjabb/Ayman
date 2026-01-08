@@ -1,56 +1,60 @@
+const axios = require('axios');
+
 module.exports.config = {
   name: "رابط",
-  version: "1.1.0",
+  version: "1.2.0",
   hasPermssion: 0,
-  credits: "عمر",
-  description: "روابط مختصرة للصور التي تُرفق بها 🐱😺",
-  usePrefix: false,
-  commandCategory: "خدمات",
-  usages: "[رد على صور أو إرسالها مباشرة]",
-  cooldowns: 5,
-  dependencies: {
-    "axios": ""
-  }
+  credits: "عمر & سيرا تشان",
+  description: "تحويل صورك لروابط Imgur دائمة ✨",
+  usePrefix: true,
+  commandCategory: "خدمات سيرا",
+  usages: "[رد على صورة]",
+  cooldowns: 5
 };
 
 module.exports.run = async ({ api, event }) => {
-  const axios = global.nodemodule['axios'];
+  const { threadID, messageID, messageReply, type, attachments } = event;
   let links = [];
 
-  // جلب الروابط من الرد على رسالة أو الصور المرسلة مباشرة
-  if (event.type === "message_reply" && event.messageReply.attachments && event.messageReply.attachments.length > 0) {
-    for (const attachment of event.messageReply.attachments) {
-      if (attachment.type === "photo") links.push(attachment.url);
+  // جلب الروابط من الرد أو المرفقات المباشرة
+  if (type === "message_reply" && messageReply.attachments.length > 0) {
+    for (let item of messageReply.attachments) {
+      if (item.type === "photo") links.push(item.url);
     }
-  } else if (event.attachments && event.attachments.length > 0) {
-    for (const attachment of event.attachments) {
-      if (attachment.type === "photo") links.push(attachment.url);
+  } else if (attachments.length > 0) {
+    for (let item of attachments) {
+      if (item.type === "photo") links.push(item.url);
     }
-  } else {
-    return api.sendMessage('🐱😺 أوه لا! ما في صور! رد على صورة أو أرسل صورة مباشرة لكي أعطيك رابطها المختصر.', event.threadID, event.messageID);
   }
 
   if (links.length === 0) {
-    return api.sendMessage('😹 لم أجد أي صورة صالحة في الرسائل المرفقة.', event.threadID, event.messageID);
+    return api.sendMessage('╭──── • ◈ • ────╮\n  يوه! وين الصورة؟ ✨\n╰──── • ◈ • ────╯\n\nرد على صورة أو أرسلها مع الأمر عشان سيرا تعطيك الرابط! 🐾', threadID, messageID);
   }
 
-  const shortenedLinks = [];
+  api.sendMessage(`✨ لحظة بس يا عسل.. سيرا جالسة ترفع ${links.length} صورة... 🐾`, threadID, messageID);
 
+  let result = [];
   try {
-    for (const link of links) {
-      const res = await axios.get(`https://bot.api-johnlester.repl.co/imgur?link=${encodeURIComponent(link)}`);
-      if (res.data && res.data.uploaded && res.data.uploaded.image) {
-        shortenedLinks.push(res.data.uploaded.image);
-      } else {
-        shortenedLinks.push("❌ فشل الحصول على الرابط");
+    for (let url of links) {
+      // استخدام API مستقر لرفع الصور على Imgur
+      const res = await axios.get(`https://api.imgbb.com/1/upload?key=6032488a033f67a21696237c04192b0e&image=${encodeURIComponent(url)}`);
+      if (res.data && res.data.data && res.data.data.url) {
+        result.push(res.data.data.url);
       }
     }
 
-    const formattedLinks = shortenedLinks.map((link, index) => `📌 صورة ${index + 1}: ${link}`).join('\n');
-    return api.sendMessage(`🐱😺 هاهو روابط صورك المختصرة:\n\n${formattedLinks}`, event.threadID, event.messageID);
+    if (result.length === 0) throw new Error("فشل الرفع");
 
-  } catch (error) {
-    console.error(error);
-    return api.sendMessage(`😹 حدث خطأ أثناء محاولة إنشاء الروابط المختصرة!\n${error.message}`, event.threadID, event.messageID);
+    let replyMsg = `╭──── • ◈ • ────╮\n  تـم تـجـهـيـز الـروابـط ✨\n╰──── • ◈ • ────╯\n\n`;
+    result.forEach((link, i) => {
+      replyMsg += `🖼️ الـرابط ${i + 1}:\n🔗 ${link}\n\n`;
+    });
+    replyMsg += `🐾 سيرا تتمنى لك يوماً سعيداً! ✨`;
+
+    return api.sendMessage(replyMsg, threadID, messageID);
+
+  } catch (err) {
+    console.error(err);
+    return api.sendMessage('🥺 سيرا اعتذرت! فشل رفع الصور، يمكن الرابط الأصلي فيه مشكلة أو السيرفر مضغوط.', threadID, messageID);
   }
 };
