@@ -4,7 +4,7 @@ const path = require("path");
 
 module.exports.config = {
   name: "معلمي",
-  version: "2.5.0",
+  version: "2.6.0",
   hasPermssion: 0,
   credits: "Sera Chan & Ayman",
   description: "رسالة شكر وتقدير للمعلم الذي علم أيمن صناعة البوت ✨",
@@ -16,7 +16,7 @@ module.exports.config = {
 module.exports.run = async function({ api, event }) {
   const { threadID, messageID } = event;
 
-  // رابط الصورة المدمجة (المعلم شيفو وحساب المعلم)
+  // رابط صورة المعلم شيفو
   const imgURL = "https://i.ibb.co/6w7G8Lq/avatar.jpg"; 
   
   const cacheDir = path.join(__dirname, "cache");
@@ -29,7 +29,7 @@ module.exports.run = async function({ api, event }) {
     const res = await axios.get(imgURL, { responseType: "arraybuffer" });
     fs.writeFileSync(imgPath, Buffer.from(res.data));
 
-    // رسالة شكر مرتبة بطابع سيرا تشان
+    // رسالة شكر فخمة ومرتبة
     const msg = `
 🌸 سـلامٌ مـن سـيـرا تـشـان! 🌸
 ──────────────────
@@ -40,21 +40,18 @@ module.exports.run = async function({ api, event }) {
 📖 "بـفـضـل تـعـلـيـمـك وبـرعـتـك، أصـبـح لـلإبـداع عـنـوان."
 
 💖 شـكـراً لـك يـا سـيـدي عـلـى كـل وقـتـك ومـجـهـودك.. سيرا وأيمن يـمـتـنّـان لـك للأبـد! 🐾
-
 ──────────────────
-🔗 حـسـاب الـمـعـلـم:
-https://www.facebook.com/profile.php?id=61584059280197
 `;
 
     return api.sendMessage({
       body: msg,
       attachment: fs.createReadStream(imgPath)
     }, threadID, () => {
-      // حذف الصورة بعد الإرسال
+      // حذف الصورة بعد الإرسال للحفاظ على نظافة الذاكرة
       if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
     }, messageID);
 
   } catch (e) {
-    return api.sendMessage("🥺 سـيرا تـشـان تـعتذر.. فشلت في تحميل صورة المعلم حالياً، حاول مرة أخرى!", threadID, messageID);
+    return api.sendMessage("🥺 سـيرا تـشـان تـعتذر.. فشلت في تحميل صورة المعلم حالياً، ولكن الشكر والتقدير واصلان للقلب! ✨", threadID, messageID);
   }
 };
