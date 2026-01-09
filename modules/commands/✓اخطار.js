@@ -1,42 +1,30 @@
 module.exports.config = {
-  name: "اخطار",
-  version: "1.1.0",
-  hasPermssion: 2, // المطور فقط
-  credits: "عمر | Sera Chan",
-  description: "ارسال رسالة تحذير لجميع الكروبات التي فيها البوت",
+  name: "نشر",
+  version: "1.0.0",
+  hasPermssion: 2, // للمطور فقط
+  credits: "Ayman",
+  description: "إرسال رسالة لجميع المجموعات",
   commandCategory: "المطور",
-  usages: "-اخطار <الرسالة>",
-  cooldowns: 5,
+  usages: ".نشر [النص]",
+  cooldowns: 5
 };
 
-module.exports.run = async function({ api, event, args }) {
-  const moment = require("moment-timezone");
-  const { senderID, threadID, messageID } = event;
+module.exports.run = async ({ api, event, args }) => {
+  const { threadID, messageID, senderID } = event;
+  if (senderID !== "61577861540407") return; // حماية إضافية لك
 
-  const permission = ["61577861540407"]; // IDs المصرح لهم
-  if (!permission.includes(senderID))
-    return api.sendMessage("❌ ليس لديك صلاحية استخدام هذا الأمر.", threadID, messageID);
+  const content = args.join(" ");
+  if (!content) return api.sendMessage("📩 أرسل النص الذي تريد نشره يا زعيم.", threadID, messageID);
 
-  if (!args.length)
-    return api.sendMessage("❌ استخدم: -اخطار <الرسالة>", threadID, messageID);
+  const allThreads = await api.getThreadList(500, null, ["INBOX"]);
+  let count = 0;
 
-  const msg = args.join(" ");
-  const time = moment.tz("Asia/Baghdad").format("HH:mm:ss D/MM/YYYY");
-
-  const boxMsg = `╭─•⊰ اخطار •⊱•─╮\n${msg}\n╰────────────╯\n⏰ ${time}`;
-
-  try {
-    // استدعاء كل الكروبات التي فيها البوت
-    const allThreads = await api.getThreadList(100, null, ["inbox"]);
-    const groupThreads = allThreads.filter(thread => thread.isGroup);
-
-    for (const thread of groupThreads) {
-      await api.sendMessage(boxMsg, thread.threadID);
+  for (const thread of allThreads) {
+    if (thread.isGroup && thread.threadID !== threadID) {
+      await api.sendMessage(`📢 إعلان من المطور أيمن:\n──────────────────\n${content}`, thread.threadID);
+      count++;
     }
-
-    return api.sendMessage(`✅ تم إرسال الإخطار لجميع الكروبات (${groupThreads.length})!`, threadID, messageID);
-
-  } catch (e) {
-    return api.sendMessage(`❌ حدث خطأ أثناء الإرسال: ${e.message}`, threadID, messageID);
   }
+
+  return api.sendMessage(`✅ تم نشر الرسالة بنجاح في ${count} مجموعة.`, threadID, messageID);
 };
