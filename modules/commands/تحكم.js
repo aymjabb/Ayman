@@ -1,45 +1,57 @@
-const fs = require("fs-extra");
-const path = require("path");
-const { exec } = require("child_process");
+const fs = require("fs-extra"); // استدعاء مكتبة التعامل مع الملفات
+const path = require("path"); // استدعاء مكتبة التعامل مع المسارات
+const { exec } = require("child_process"); // استدعاء exec لتنفيذ أوامر التيرمنال
 
 module.exports.config = {
-  name: "تحكم",
+  name: "control", // اسم الأمر بالإنجليزية لتجنب مشاكل GitHub
   version: "5.0.0",
-  hasPermssion: 2, // للمطور فقط
-  credits: "Ayman & Sera",
+  hasPermssion: 2, // صلاحية المطور فقط
+  credits: "Ayman & Sera", // المطورين
   description: "أدوات السيطرة الملكية للمطور (تحديث، جلب ملفات، تنفيذ أوامر)",
-  commandCategory: "المطور",
-  usages: "[ملف / تحديث / أمر / غادر]",
+  commandCategory: "Developer", // تصنيف الأمر بالإنجليزية
+  usages: "[file / update / command / leave]",
   cooldowns: 0
 };
 
-module.exports.run = async ({ api, event, args, Threads }) => {
+module.exports.run = async ({ api, event, args }) => {
   const { threadID, messageID, senderID } = event;
-  const DEV_ID = "61577861540407"; // أيديك يا زعيم
+  const DEV_ID = "61577861540407"; // أيديك (المطور الرئيسي)
 
-  if (senderID !== DEV_ID) return api.sendMessage("❌ هذا الأمر مخصص لسيادة المطور أيمن فقط.", threadID, messageID);
+  // التحقق من أن المستخدم هو المطور
+  if (senderID !== DEV_ID) 
+    return api.sendMessage("❌ هذا الأمر مخصص للمطور فقط.", threadID, messageID);
 
-  const action = args[0];
+  const action = args[0]; // الإجراء المطلوب
 
-  // 1. جلب أي ملف من ملفات البوت (لسرعة التعديل)
-  if (action === "ملف") {
-    const fileName = args[1];
-    if (!fileName) return api.sendMessage("📩 أرسل اسم الملف، مثال: تحكم ملف سبام.js", threadID, messageID);
-    const pathFile = path.join(__dirname, fileName);
-    if (!fs.existsSync(pathFile)) return api.sendMessage("❌ الملف غير موجود.", threadID, messageID);
-    return api.sendMessage({ body: `📄 ملف: ${fileName}`, attachment: fs.createReadStream(pathFile) }, threadID, messageID);
+  // 1️⃣ جلب أي ملف من ملفات البوت
+  if (action === "file") {
+    const fileName = args[1]; // اسم الملف المطلوب
+    if (!fileName) 
+      return api.sendMessage("📩 أرسل اسم الملف، مثال: control.js", threadID, messageID);
+
+    const pathFile = path.join(__dirname, fileName); // تحديد المسار
+    if (!fs.existsSync(pathFile)) 
+      return api.sendMessage("❌ الملف غير موجود.", threadID, messageID);
+
+    return api.sendMessage(
+      { body: `📄 ملف: ${fileName}`, attachment: fs.createReadStream(pathFile) }, 
+      threadID, 
+      messageID
+    );
   }
 
-  // 2. تحديث البوت (Restart)
-  if (action === "تحديث") {
-    await api.sendMessage("🔄 جاري إعادة تشغيل أنظمة سيرا تشان.. سأعود أقوى!", threadID);
-    process.exit(1); // يقوم بإعادة التشغيل إذا كنت تستخدم PM2 أو مراقب عمليات
+  // 2️⃣ تحديث البوت (Restart)
+  if (action === "update") {
+    await api.sendMessage("🔄 جاري إعادة تشغيل البوت.. سأعود أقوى!", threadID);
+    process.exit(1); // إنهاء العملية لإعادة التشغيل (يعمل مع PM2 أو nodemon)
   }
 
-  // 3. تنفيذ أمر ترمنال (Terminal Shell)
-  if (action === "امر") {
-    const cmd = args.slice(1).join(" ");
-    if (!cmd) return api.sendMessage("💻 أرسل الأمر المراد تنفيذه في السيرفر.", threadID, messageID);
+  // 3️⃣ تنفيذ أمر ترمنال
+  if (action === "command") {
+    const cmd = args.slice(1).join(" "); // استخراج الأمر
+    if (!cmd) 
+      return api.sendMessage("💻 أرسل الأمر المراد تنفيذه في السيرفر.", threadID, messageID);
+
     exec(cmd, (error, stdout, stderr) => {
       if (error) return api.sendMessage(`❌ خطأ: ${error.message}`, threadID, messageID);
       if (stderr) return api.sendMessage(`⚠️ تنبيه: ${stderr}`, threadID, messageID);
@@ -47,28 +59,27 @@ module.exports.run = async ({ api, event, args, Threads }) => {
     });
   }
 
-  // 4. مغادرة البوت لمجموعة معينة (عن طريق الأيدي)
-  if (action === "غادر") {
-    const id = args[1] || threadID;
-    api.sendMessage("🚀 بأمر من المطور، سيرا تشان تغادر الآن. وداعاً!", id, () => {
-        api.removeUserFromGroup(api.getCurrentUserID(), id);
+  // 4️⃣ مغادرة البوت من مجموعة معينة
+  if (action === "leave") {
+    const id = args[1] || threadID; // استخدام المعرف المرسل أو المجموعة الحالية
+    api.sendMessage("🚀 بأمر المطور، البوت يغادر الآن. وداعاً!", id, () => {
+      api.removeUserFromGroup(api.getCurrentUserID(), id); // تنفيذ المغادرة
     });
   }
 
-  // 5. إذا لم يرسل خيار، عرض القائمة
+  // 5️⃣ عرض قائمة التحكم إذا لم يتم إرسال خيار
   if (!action) {
     const menu = `
-👑 أهلاً بك يا زعيم (أيمن)
+👑 أهلاً بك يا زعيم
 ──────────────────
-🛠️ قـائمة الـتـحـكـم الـمـلكيـة:
+🛠️ قائمة التحكم الملكية:
 ──────────────────
-❶ تحكم ملف [اسم الملف]: لجلب كود أي أمر.
-❷ تحكم تحديث: لإعادة تشغيل البوت فوراً.
-❸ تحكم امر [الكود]: لتنفيذ أوامر السيرفر.
-❹ تحكم غادر [الأيدي]: لمغادرة أي مجموعة.
-❺ تحكم نشر [النص]: للنشر في كل المجموعات.
+❶ control file [filename]: لجلب كود أي أمر
+❷ control update: لإعادة تشغيل البوت فوراً
+❸ control command [cmd]: لتنفيذ أوامر السيرفر
+❹ control leave [threadID]: لمغادرة أي مجموعة
 ──────────────────
-🐾 نظام سيرا تحت أمرك دائماً.
+🐾 نظام البوت تحت أمرك دائماً
 `;
     return api.sendMessage(menu, threadID, messageID);
   }
