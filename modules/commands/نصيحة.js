@@ -2,11 +2,11 @@ const axios = require("axios");
 
 module.exports.config = {
   name: "نصيحة",
-  version: "2.0.0",
+  version: "2.1.0",
   hasPermssion: 0,
   credits: "Ayman & Sera",
-  description: "يقدم لك نصائح وحكم عشوائية بأسلوب راقٍ",
-  commandCategory: "ترفية",
+  description: "يقدم لك نصائح وحكم عربية بأسلوب راقٍ وفخم",
+  commandCategory: "ترفيه",
   usages: ".نصيحة",
   cooldowns: 5
 };
@@ -14,7 +14,7 @@ module.exports.config = {
 module.exports.run = async ({ event, api }) => {
   const { threadID, messageID } = event;
 
-  // مصفوفة النصائح العربية الفخمة (تمت زيادتها وتنوعها)
+  // قائمة النصائح
   const arabicAdvices = [
     "لا تتوقف عندما تتعب، توقف عندما تنتهي. ✨",
     "النجاح ليس عدم فعل الأخطاء، النجاح هو عدم تكرار نفس الخطأ مرتين.",
@@ -36,22 +36,22 @@ module.exports.run = async ({ event, api }) => {
   ];
 
   try {
-    // اختيار نصيحة عشوائية من القائمة
+    if (!arabicAdvices.length) throw new Error("لا يوجد نصائح في القائمة.");
+
+    // اختيار نصيحة عشوائية
     const randomAdvice = arabicAdvices[Math.floor(Math.random() * arabicAdvices.length)];
 
     const msg = `
-╭━━━━━━━〔 💡 نـصـيـحـة 〕━━━━━━━╮
-
+╭━━━━━━━〔 💡 نصيحة 〕━━━━━━━╮
 ✨ ${randomAdvice}
-
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
-🐾 مـن قـلـب سـيـرا إلـى قـلـبـك..
-    `;
+🐾 من قلب سيرا إلى قلبك..
+`;
 
-    return api.sendMessage(msg, threadID, messageID);
+    return api.sendMessage(msg, threadID, messageID || undefined);
 
   } catch (e) {
-    console.log(e);
-    return api.sendMessage("🥺 المعذرة، سيرا تشان لا تستطيع التفكير بنصيحة الآن!", threadID, messageID);
+    console.error(e);
+    return api.sendMessage("🥺 المعذرة، سيرا تشان لا تستطيع التفكير بنصيحة الآن!", threadID, messageID || undefined);
   }
 };
