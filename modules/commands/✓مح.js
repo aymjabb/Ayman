@@ -1,49 +1,31 @@
 module.exports.config = {
-  name: "طرد",
-  version: "2.0.0",
-  hasPermssion: 1, // 1 للمشرفين، 2 للمطورين
-  credits: "Sera Bot",
-  description: "طرد العضو عن طريق المنشن أو الرد",
-  commandCategory: "الادارة",
-  usages: "[بالرد على رسالته] أو [@منشن]",
+  name: "مح",
+  version: "1.1.0",
+  hasPermssion: 1, // للأدمن والمطور
+  credits: "Ayman & Sera",
+  description: "طرد (مح) عضو من المجموعة",
+  commandCategory: "إدارة",
+  usages: "[منشن / رد / ايدي]",
   cooldowns: 2
 };
 
-module.exports.run = async function({ api, event, args }) {
+module.exports.run = async ({ api, event, args }) => {
   const { threadID, messageID, senderID, mentions, type, messageReply } = event;
 
-  try {
-    let targetID;
+  // التحقق من صلاحيات البوت كأدمن لضمان القدرة على التنفيذ
+  const threadInfo = await api.getThreadInfo(threadID);
+  if (!threadInfo.adminIDs.some(item => item.id == api.getCurrentUserID())) 
+    return api.sendMessage("❌ سيرا تشان تحتاج لرتبة (أدمن) لكي تقوم بعملية الـ (مح)!", threadID, messageID);
 
-    // 1. التحقق إذا كان هناك رد على رسالة (Reply)
-    if (type === "message_reply") {
-      targetID = messageReply.senderID;
-    } 
-    // 2. التحقق إذا كان هناك منشن (Mention)
-    else if (Object.keys(mentions).length > 0) {
-      targetID = Object.keys(mentions)[0];
-    } 
-    // 3. إذا لم يتوفر أي منهما
-    else {
-      return api.sendMessage("⚠️ يرجى الرد على رسالة الشخص أو عمل منشن له لطرده.", threadID, messageID);
-    }
+  let targetID;
+  if (type == "message_reply") targetID = messageReply.senderID;
+  else if (Object.keys(mentions).length > 0) targetID = Object.keys(mentions)[0];
+  else targetID = args[0];
 
-    // منع البوت من محاولة طرد نفسه
-    if (targetID == api.getCurrentUserID()) {
-      return api.sendMessage("❌ لا يمكنني طرد نفسي!", threadID, messageID);
-    }
+  if (!targetID) return api.sendMessage("👤 منشن الشخص أو رد على رسالته لعمل (مح).", threadID, messageID);
 
-    // تنفيذ أمر الطرد
-    api.removeUserFromGroup(targetID, threadID, (err) => {
-      if (err) {
-        return api.sendMessage("❌ فشل الطرد. تأكد من أنني مشرف (Admin) في المجموعة.", threadID, messageID);
-      } else {
-        return api.sendMessage("🚪 تم طرد العضو بنجاح من المجموعة.", threadID);
-      }
-    });
-
-  } catch (error) {
-    console.error(error);
-    api.sendMessage("❌ حدث خطأ غير متوقع أثناء تنفيذ الأمر.", threadID, messageID);
-  }
+  return api.removeUserFromGroup(targetID, threadID, (err) => {
+    if (err) return api.sendMessage("❌ فشلت العملية، قد يكون الشخص أدمن أو أعلى مني رتبة.", threadID, messageID);
+    api.sendMessage("🚀 تم تنفيذ الـ (مح) بنجاح.. طار المزعج! 😎", threadID);
+  });
 };
