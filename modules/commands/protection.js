@@ -1,20 +1,20 @@
-module.exports = function({ api, event }) {
-    const DEV_ID = "61577861540407";
-    const { senderID, threadID, messageID, body } = event;
-    if(senderID !== DEV_ID) return api.sendMessage("❌", threadID, messageID);
-
-    let status = body.includes("اون") ? true : false;
-    let threadData = global.data.threadData.get(threadID) || {};
-    threadData.adminProtect = status;
-    global.data.threadData.set(threadID, threadData);
-
-    api.sendMessage(`
-╔══════════════
-║ 🛡️ حماية الأدمن
-║ 💫 الوضع: ${status ? "مفعل" : "معطل"}
-║ 🔹 يمنع أي شخص من أن يصبح أدمن بدون إذنك
-║ 🔹 يحمي كل الأدمنية الحالية
-║ 🌟 ليلى تحميك يا مطوري العزيز
-╚══════════════
-    `, threadID, messageID);
+module.exports = {
+    config: { name: "حماية" },
+    run: async function({ api, event, args, globalData }) {
+        const { threadID, messageID } = event;
+        const action = args[0];
+        if(action === "اون") {
+            globalData.adminLock[threadID] = true;
+            api.sendMessage(`
+╔═════════════════════
+║ 🛡️ حماية الادمنيات مفعلة
+╠═════════════════════
+║ أي محاولة لترقية أي شخص سيتم إلغاؤها فوراً!
+╚═════════════════════
+            `, threadID, messageID);
+        } else if(action === "اوف") {
+            globalData.adminLock[threadID] = false;
+            api.sendMessage("❌ تم إيقاف حماية الادمنيات.", threadID, messageID);
+        }
+    }
 };
