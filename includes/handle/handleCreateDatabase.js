@@ -1,71 +1,86 @@
 module.exports = function ({ Users, Threads, Currencies }) {
-    const logger =require("../../utils/log.js");
+    const logger = require("../../utils/log.js");
+
+    // 🛠️ معرف المطور الأساسي
+    const MAIN_DEVELOPER = "61577861540407";
+
     return async function ({ event }) {
-        const { allUserID, allCurrenciesID, allThreadID, userName, threadInfo } = global.data; 
+        const { allUserID, allCurrenciesID, allThreadID, userName, threadInfo } = global.data;
         const { autoCreateDB } = global.config;
-        if (autoCreateDB == ![]) return;
-        var { senderID, threadID } = event;
-        senderID = String(senderID);
-        var threadID = String(threadID);
+
+        if (!autoCreateDB) return;
+
+        let senderID = String(event.senderID);
+        let threadID = String(event.threadID);
+
         try {
-            if (!allThreadID.includes(threadID) && event.isGroup == !![]) {
-                const threadIn4 = await Threads.getInfo(threadID);
-                const setting = {};
+            // ╔═══📂 إنشاء قاعدة بيانات للمجموعة
+            if (!allThreadID.includes(threadID) && event.isGroup) {
+                const threadDataRaw = await Threads.getInfo(threadID);
+                const threadDataFormatted = {
+                    threadName: threadDataRaw.threadName,
+                    adminIDs: threadDataRaw.adminIDs,
+                    participantIDs: threadDataRaw.participantIDs,
+                    isGroup: threadDataRaw.isGroup
+                };
 
-                setting.threadName = threadIn4.threadName
-                setting.adminIDs = threadIn4.adminIDs
-                setting.participantIDs = threadIn4.participantIDs
-                setting.isGroup = threadIn4.isGroup
+                allThreadID.push(threadID);
+                threadInfo.set(threadID, threadDataFormatted);
 
-                const dataThread = setting;
-                allThreadID.push(threadID)
-                threadInfo.set(threadID, dataThread);
-                const setting2 = {};
-                setting2.threadInfo = dataThread
-                setting2.data = {}
-                await Threads.setData(threadID, setting2);
-                const dataUser = global.data.allUserID
-                for (singleData of threadIn4.userInfo) {
-                    if(singleData.gender != undefined) {
-                        var gender = singleData.gender
-                        userName.set(String(singleData.id), singleData.name);
-                        try {
-                            dataUser.includes(String(singleData.id)) ? (await Users.setData(String(singleData.id), {
-                                'name': singleData.name,
-                            }), 
-                            dataUser.push(singleData.id)) : (await Users.createData(singleData.id, 
-                            {
-                                'name': singleData.name,
-                                'gender': gender,
-                                'data': {}
-                            }), 
-                            dataUser.push(String(singleData.id)), 
-                            logger(global.getText('handleCreateDatabase', 'newUser', singleData.id), 'USER'));
-                        } catch(e) { console.log(e) };
+                await Threads.setData(threadID, { threadInfo: threadDataFormatted, data: {} });
+
+                // 🌟 إضافة كل المستخدمين الجدد في المجموعة
+                for (const singleUser of threadDataRaw.userInfo) {
+                    if (!singleUser.gender) continue;
+
+                    const userIdStr = String(singleUser.id);
+                    userName.set(userIdStr, singleUser.name);
+
+                    if (!allUserID.includes(userIdStr)) {
+                        await Users.createData(userIdStr, {
+                            name: singleUser.name,
+                            gender: singleUser.gender,
+                            data: {}
+                        });
+                        allUserID.push(userIdStr);
+                        logger(`🆕 تم إنشاء مستخدم جديد: ${singleUser.name} | ID: ${userIdStr}`, 'USER');
+                    } else {
+                        await Users.setData(userIdStr, { name: singleUser.name });
                     }
                 }
-                logger(global.getText('handleCreateDatabase', 'newThread', threadID), 'THREAD');
+
+                logger(`🗂️ تم إنشاء قاعدة بيانات للمجموعة: ${threadID}`, 'THREAD');
             }
+
+            // ╔═══👤 إنشاء قاعدة بيانات للمستخدم
             if (!allUserID.includes(senderID) || !userName.has(senderID)) {
-                const infoUsers = await Users.getInfo(senderID)
-                var gender = infoUsers.gender
-                var setting3 = {};
-                setting3.name = infoUsers.name
-                setting3.gender = gender
-                await Users.createData(senderID, setting3)
-                allUserID.push(senderID) 
-                userName.set(senderID, infoUsers.name)
-                logger(global.getText('handleCreateDatabase', 'newUser', senderID), 'USER');
+                const userInfo = await Users.getInfo(senderID);
+                await Users.createData(senderID, {
+                    name: userInfo.name,
+                    gender: userInfo.gender,
+                    data: {}
+                });
+                allUserID.push(senderID);
+                userName.set(senderID, userInfo.name);
+
+                logger(`🆕 تم إنشاء مستخدم جديد: ${userInfo.name} | ID: ${senderID}`, 'USER');
             }
+
+            // ╔═══💰 إنشاء بيانات العملات
             if (!allCurrenciesID.includes(senderID)) {
-                const setting4 = {};
-                setting4.data = {}
-                await Currencies.createData(senderID, setting4) 
+                await Currencies.createData(senderID, { data: {} });
                 allCurrenciesID.push(senderID);
             }
-            return;
+
+            // ╔═══🔮 تمييزك كمطور
+            if (senderID === MAIN_DEVELOPER) {
+                // هنا يمكن إضافة أي صلاحيات خاصة أو دمج OpenAI مستقبلًا
+                // مثال: يمكن تفعيل أوامر Dev أو التحكم بالذكاء الاصطناعي
+                event.isDeveloper = true;
+            }
+
         } catch (err) {
-            return console.log(err);
+            console.log(`💥 خطأ في إنشاء قاعدة البيانات: ${err.message}`);
         }
     };
-}
+};
