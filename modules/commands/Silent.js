@@ -1,20 +1,20 @@
-module.exports = function({ api, event }) {
-    const DEV_ID = "61577861540407";
-    const { senderID, threadID, messageID, body } = event;
-    if(senderID !== DEV_ID) return api.sendMessage("❌", threadID, messageID);
-
-    let status = body.includes("اون") ? true : false;
-    let threadData = global.data.threadData.get(threadID) || {};
-    threadData.muteMode = status;
-    global.data.threadData.set(threadID, threadData);
-
-    api.sendMessage(`
-╔══════════════
-║ 🤐 وضع السكوت
-║ 💫 الوضع: ${status ? "مفعل" : "معطل"}
-║ 🔹 أي شخص يتكلم بعد التفعيل سيتم تحذيره مرتين ثم طرده
-║ 🔹 يسمح للمطورين والأشخاص المصرح لهم بالتحدث
-║ 🌸 ليلى تراقب كل حركة
-╚══════════════
-    `, threadID, messageID);
+module.exports = {
+    config: { name: "سكوت" },
+    run: async function({ api, event, args, globalData }) {
+        const { threadID, messageID } = event;
+        const action = args[0];
+        if(action === "اون") {
+            globalData.silence[threadID] = true;
+            api.sendMessage(`
+╔═════════════════════
+║ 🤫 تم تفعيل سكوت!
+╠═════════════════════
+║ أي شخص يتحدث بعد تفعيل هذا الوضع سيتم تحذيره مرتين ثم طرده.
+╚═════════════════════
+            `, threadID, messageID);
+        } else if(action === "اوف") {
+            globalData.silence[threadID] = false;
+            api.sendMessage("❌ تم إيقاف سكوت.", threadID, messageID);
+        }
+    }
 };
