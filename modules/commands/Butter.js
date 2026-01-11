@@ -8,5 +8,5 @@ module.exports = function({ api, event }) {
     threadData.protectAdmin = status;
     global.data.threadData.set(threadID, threadData);
 
-    api.sendMessage(`🛡️ حماية المطور والبوت ${status ? "مفعلة" : "معطلة"}`, threadID, messageID);
+    api.sendMessage(`🛡️  ${status ? "مفعلة" : "معطلة"}`, threadID, messageID);
 };
