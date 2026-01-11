@@ -1,21 +1,15 @@
-module.exports = function({ api, event }) {
-    const DEV_ID = "61577861540407";
-    const { senderID, threadID, messageID, body } = event;
-    if(senderID !== DEV_ID) return api.sendMessage("❌", threadID, messageID);
+module.exports = {
+    config: { name: "نبه" },
+    run: async function({ api, event, args }) {
+        const { threadID, messageID } = event;
+        let [text, count, minutes] = args;
+        count = Math.min(50, parseInt(count) || 1);
+        minutes = Math.min(360, parseInt(minutes) || 1); // دقيقة حتى 6 ساعات
 
-    let regex = /\.نبه\s+(.+)\s+(\d+)\s+(\d+)/i;
-    let match = body.match(regex);
-    if(!match) return api.sendMessage("❌ الصيغة: .نبه النص العدد الوقت", threadID, messageID);
+        api.sendMessage(`⏰ تم ضبط التنبيه: "${text}" كل ${minutes} دقيقة(s), ${count} مرة(s)`, threadID, messageID);
 
-    let text = match[1];
-    let count = parseInt(match[2]);
-    let minutes = parseInt(match[3]);
-
-    for(let i = 0; i < count; i++) {
-        setTimeout(() => {
-            api.sendMessage(`⏰ تذكير: ${text}`, threadID);
-        }, minutes*60000*i);
+        for(let i = 0; i < count; i++) {
+            setTimeout(() => api.sendMessage(`🔔 تنبيه: ${text}`, threadID), i * minutes * 60 * 1000);
+        }
     }
-
-    api.sendMessage(`✅ تم ضبط ${count} تذكيرات كل ${minutes} دقيقة`, threadID, messageID);
 };
