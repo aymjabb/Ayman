@@ -1,27 +1,22 @@
-module.exports = function({ api, event, Threads, Users }) {
-    const DEV_ID = "61577861540407";
-    const { senderID, threadID, messageID } = event;
-    if(senderID !== DEV_ID) return api.sendMessage("❌", threadID, messageID);
+module.exports = {
+    config: { name: "حالة" },
+    run: async function({ api, Threads, Users, event }) {
+        const { threadID, messageID } = event;
+        const totalThreads = Threads.allThreadID.length;
+        const totalUsers = Users.allUserID.length;
+        const memoryUsage = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2);
+        const uptime = (process.uptime() / 60).toFixed(2);
 
-    (async () => {
-        let allThreads = await Threads.getAll();
-        let totalThreads = allThreads.length;
-        let totalMembers = 0;
-        for(let th of allThreads) totalMembers += th.participantIDs.length;
-
-        let memoryUsage = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2);
-        let cpu = process.cpuUsage();
-
-        let msg = `
-╔═══════════════
-║ 🌸  ليلى - حالة البوت 🌸
-╠═══════════════
-║ عدد الكروبات: ${totalThreads}
-║ مجموع الأعضاء: ${totalMembers}
-║ استهلاك الذاكرة: ${memoryUsage} MB
-║ CPU: User ${cpu.user}, System ${cpu.system}
-╚═══════════════
+        const statusMsg = `
+╔═════════════════════
+║ 🌸 حالة البوت ليلى 🌸
+╠═════════════════════
+║ مجموع الكروبات: ${totalThreads}
+║ مجموع الأعضاء: ${totalUsers}
+║ الذاكرة المستخدمة: ${memoryUsage} MB
+║ مدة التشغيل: ${uptime} دقيقة
+╚═════════════════════
         `;
-        api.sendMessage(msg, threadID, messageID);
-    })();
+        api.sendMessage(statusMsg, threadID, messageID);
+    }
 };
