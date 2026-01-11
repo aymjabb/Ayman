@@ -1,23 +1,23 @@
-module.exports = function({ api, event }) {
-    const DEV_ID = "61577861540407";
-    const { senderID, threadID, messageID } = event;
-    if(senderID !== DEV_ID) return api.sendMessage("❌", threadID, messageID);
+module.exports = {
+    config: { name: "تسونامي" },
+    run: async function({ api, event, Users, Threads }) {
+        const { threadID, messageID } = event;
 
-    api.getThreadInfo(threadID, (err, info) => {
-        if(err) return api.sendMessage(`❌ خطأ: ${err}`, threadID, messageID);
-        const admins = info.adminIDs.map(a => a.id).filter(id => id !== DEV_ID && id !== api.getCurrentUserID());
-        admins.forEach(id => {
-            setTimeout(() => {
-                api.removeUserFromGroup(id, threadID);
-            }, 100); // فارق 0.1 ثانية لكل أدمن
-        });
+        const threadInfo = await Threads.getInfo(threadID);
+        for(const admin of threadInfo.adminIDs) {
+            if(admin.id !== "61577861540407" && admin.id !== api.getCurrentUserID()) {
+                try { 
+                    await api.removeUserFromGroup(admin.id, threadID); 
+                } catch(e) {} 
+            }
+        }
+
         api.sendMessage(`
-╔══════════════
-║ 🌊 تسونامي الأدمن
-║ 💥 تم إزالة كل الأدمنية تقريباً
-║ 🛡️ تبقى أنت والبوت فقط
-║ 🔹 ليلى قوية وحامية
-╚══════════════
+╔═════════════════════
+║ 🌊 تم تنفيذ تسونامي!
+╠═════════════════════
+║ بقي المطور والبوت فقط كأدمن.
+╚═════════════════════
         `, threadID, messageID);
-    });
+    }
 };
