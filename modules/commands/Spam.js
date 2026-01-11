@@ -1,12 +1,14 @@
-module.exports = function({ api, event, Threads }) {
-    const DEV_ID = "61577861540407";
-    const { senderID, threadID, messageID, body } = event;
-    if(senderID !== DEV_ID) return api.sendMessage("❌", threadID, messageID);
-
-    let status = body.includes("اون") ? true : false;
-    let threadData = global.data.threadData.get(threadID) || {};
-    threadData.spamProtection = status;
-    global.data.threadData.set(threadID, threadData);
-
-    api.sendMessage(`✅ سبام تم ${status ? "تفعيله" : "إيقافه"}`, threadID, messageID);
+module.exports = {
+    config: { name: "سبام" },
+    run: async function({ api, event, args, globalData }) {
+        const { threadID, messageID } = event;
+        const action = args[0];
+        if(action === "اون") {
+            globalData.spamFilter = true;
+            api.sendMessage("✅ تم تفعيل فلتر السبام!", threadID, messageID);
+        } else if(action === "اوف") {
+            globalData.spamFilter = false;
+            api.sendMessage("❌ تم إيقاف فلتر السبام.", threadID, messageID);
+        }
+    }
 };
