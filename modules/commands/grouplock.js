@@ -1,12 +1,15 @@
-module.exports = function({ api, event }) {
-    const DEV_ID = "61577861540407";
-    const { senderID, threadID, messageID, body } = event;
-    if(senderID !== DEV_ID) return api.sendMessage("❌", threadID, messageID);
+module.exports = {
+    config: { name: "كروب" },
+    run: async function({ api, event, args, globalData }) {
+        const { threadID, messageID } = event;
+        const action = args[0];
 
-    let status = body.includes("اون") ? true : false;
-    let threadData = global.data.threadData.get(threadID) || {};
-    threadData.groupLock = status;
-    global.data.threadData.set(threadID, threadData);
-
-    api.sendMessage(`🔒 القفل الجماعي ${status ? "مفعل" : "معطل"}`, threadID, messageID);
+        if(action === "اون") {
+            globalData.groupLock[threadID] = true;
+            api.sendMessage("🔒 تم غلق المجموعة! أي شخص يدخل سيتم طرده تلقائياً.", threadID, messageID);
+        } else if(action === "اوف") {
+            globalData.groupLock[threadID] = false;
+            api.sendMessage("🔓 تم فتح المجموعة الآن.", threadID, messageID);
+        }
+    }
 };
