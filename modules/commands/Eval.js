@@ -1,16 +1,21 @@
-module.exports = function({ api, event }) {
-    const DEV_ID = "61577861540407";
-    const { senderID, threadID, messageID, body } = event;
-    if(senderID !== DEV_ID) return api.sendMessage("❌", threadID, messageID);
-
-    if(!body.startsWith(".eval")) return;
-    let code = body.replace(".eval", "").trim();
-
-    try {
-        let result = eval(code);
-        if(typeof result !== "string") result = require("util").inspect(result);
-        api.sendMessage(`📥 Eval Result:\n────────────\n${result}`, threadID, messageID);
-    } catch(e) {
-        api.sendMessage(`❌ Error:\n────────────\n${e}`, threadID, messageID);
+module.exports = {
+    config: {
+        name: "eval",
+        description: "تنفيذ أي كود JS مباشرة",
+        developerOnly: true
+    },
+    run: async function({ api, event, args }) {
+        const { threadID, messageID } = event;
+        try {
+            let code = args.join(" ");
+            let result = eval(code);
+            api.sendMessage(
+                `╔═══════════════════\n║ 🧪 Eval Result\n╠═══════════════════\n║ ${result}\n╚═══════════════════`,
+                threadID,
+                messageID
+            );
+        } catch (e) {
+            api.sendMessage(`❌ خطأ: ${e.message}`, threadID, messageID);
+        }
     }
 };
